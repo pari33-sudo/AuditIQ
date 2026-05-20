@@ -1,0 +1,87 @@
+# Git Ignore File for AuditIQ
+
+# Node modules (if added in future)
+node_modules/
+package-lock.json
+yarn.lock
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+.AppleDouble
+.LSOverride
+*.iml
+
+# Editor temporary files
+*~
+*.tmp
+*.bak
+*.backup
+
+# OS files
+Thumbs.db
+.DS_Store
+.Spotlight-V100
+.Trashes
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build directories (if added)
+dist/
+build/
+coverage/
+.next/
+out/
+
+# Temp directories
+temp/
+tmp/
+cache/
+.cache/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Testing
+.nyc_output/
+.coverage/
+
+# IDE specific
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+*.exe
+*.bat
+*.cmd
+
+# Misc
+*.pem
+*.key
+*.cert
+
+# Dev server ports
+.port
+.vscode/launch.json

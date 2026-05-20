@@ -1,0 +1,3339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AuditIQ — GRC Compliance Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --ink: #0a0f1e;
+  --ink2: #1a2236;
+  --ink3: #2d3a52;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --border2: #cbd5e1;
+  --surface: #f8fafc;
+  --white: #ffffff;
+  --gold: #d4a853;
+  --gold2: #f0c060;
+  --gold-soft: #fdf6e3;
+  --green: #16a34a;
+  --green-soft: #dcfce7;
+  --amber: #d97706;
+  --amber-soft: #fef3c7;
+  --red: #dc2626;
+  --red-soft: #fee2e2;
+  --blue: #2563eb;
+  --blue-soft: #dbeafe;
+  --compliant: #16a34a;
+  --partial: #d97706;
+  --noncompliant: #dc2626;
+  --na: #64748b;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.12);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--surface);
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── TOP HEADER ── */
+.app-header {
+  background: var(--ink);
+  padding: 0 32px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-mark {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Serif Display', serif;
+  font-size: 16px; color: var(--ink); font-weight: 700;
+}
+.logo-text {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px; color: #fff; letter-spacing: .3px;
+}
+.logo-text span { color: var(--gold2); }
+.header-tag {
+  font-size: 11px; color: rgba(255,255,255,.4);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1.5px; text-transform: uppercase;
+}
+
+/* ── TAB NAV ── */
+.tab-nav {
+  background: var(--white);
+  border-bottom: 2px solid var(--border);
+  padding: 0 32px;
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+}
+.tab-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 20px;
+  height: 54px;
+  font-size: 13px; font-weight: 600;
+  color: var(--muted);
+  border: none; background: none; cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all .2s;
+  white-space: nowrap;
+  position: relative;
+  bottom: -2px;
+}
+.tab-btn:hover { color: var(--ink); }
+.tab-btn.active {
+  color: var(--ink);
+  border-bottom-color: var(--gold);
+}
+.tab-icon {
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+}
+.tab-num {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--border);
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted);
+  transition: all .2s;
+}
+.tab-btn.active .tab-num {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+/* ── MAIN CONTENT ── */
+.main { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+
+/* ── TAB PANELS ── */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; animation: fadeUp .3s ease; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── PAGE TITLE ── */
+.page-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 28px; color: var(--ink);
+  margin-bottom: 4px;
+}
+.page-sub { font-size: 14px; color: var(--muted); margin-bottom: 28px; }
+
+/* ── CARD ── */
+.card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+}
+
+/* ── FORM ── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.form-grid.full { grid-template-columns: 1fr; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label {
+  font-size: 12px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .8px;
+}
+.field input, .field select, .field textarea {
+  border: 1.5px solid var(--border2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px; font-family: 'DM Sans', sans-serif;
+  color: var(--ink);
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  background: var(--white);
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(212,168,83,.15);
+}
+.field textarea { resize: vertical; min-height: 80px; }
+
+/* ── AUDIT TYPE CARDS ── */
+.audit-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px; }
+.audit-card {
+  border: 2px solid var(--border2);
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+}
+.audit-card:hover { border-color: var(--gold); background: var(--gold-soft); }
+.audit-card.selected { border-color: var(--gold); background: var(--gold-soft); }
+.audit-card.selected::after {
+  content: '✓';
+  position: absolute; top: 10px; right: 14px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--gold); color: var(--ink);
+  font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.audit-card-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+.audit-card-sub { font-size: 12px; color: var(--muted); }
+.audit-card-badge {
+  display: inline-block; margin-top: 8px;
+  padding: 2px 8px; border-radius: 4px;
+  font-size: 11px; font-weight: 600;
+  background: var(--blue-soft); color: var(--blue);
+}
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+  cursor: pointer; border: none; transition: all .2s;
+}
+.btn-primary {
+  background: var(--ink); color: #fff;
+}
+.btn-primary:hover { background: var(--ink2); transform: translateY(-1px); box-shadow: var(--shadow); }
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  color: var(--ink);
+}
+.btn-gold:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+.btn-outline {
+  background: transparent; color: var(--ink);
+  border: 1.5px solid var(--border2);
+}
+.btn-outline:hover { border-color: var(--gold); background: var(--gold-soft); }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-danger { background: var(--red); color: #fff; }
+
+/* ── PROGRESS BAR ── */
+.progress-bar-wrap { background: var(--border); border-radius: 99px; height: 8px; overflow: hidden; }
+.progress-bar-fill { height: 100%; border-radius: 99px; transition: width .6s ease; }
+
+/* ── STATUS BADGE ── */
+.status-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; letter-spacing: .3px;
+}
+.status-compliant { background: var(--green-soft); color: var(--green); }
+.status-partial { background: var(--amber-soft); color: var(--amber); }
+.status-noncompliant { background: var(--red-soft); color: var(--red); }
+.status-pending { background: var(--border); color: var(--muted); }
+
+/* ── CONTROL CARD ── */
+.controls-container { display: flex; flex-direction: column; gap: 12px; }
+.domain-section { margin-bottom: 8px; }
+.domain-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px;
+  background: var(--ink);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background .2s;
+  margin-bottom: 0;
+}
+.domain-header:hover { background: var(--ink2); }
+.domain-title { font-weight: 700; font-size: 14px; color: #fff; flex: 1; }
+.domain-count { font-size: 12px; color: rgba(255,255,255,.5); }
+.domain-progress-text { font-size: 12px; color: var(--gold2); font-weight: 600; }
+.domain-chevron { color: rgba(255,255,255,.5); font-size: 16px; transition: transform .2s; }
+.domain-header.open .domain-chevron { transform: rotate(180deg); }
+.domain-controls { display: none; margin-top: 1px; }
+.domain-controls.open { display: flex; flex-direction: column; gap: 0; }
+
+.control-row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 0;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-top: none;
+  transition: background .15s;
+}
+.control-row:last-child { border-radius: 0 0 10px 10px; }
+.control-row:first-child { border-top: 1px solid var(--border); }
+.control-num {
+  display: flex; align-items: flex-start; justify-content: center;
+  padding-top: 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--muted);
+  border-right: 1px solid var(--border);
+}
+.control-body { padding: 16px 18px; }
+.control-id {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 500;
+  color: var(--blue); margin-bottom: 3px;
+}
+.control-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.control-desc { font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 12px; }
+.control-actions {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+}
+.status-select {
+  border: 1.5px solid var(--border2);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px; font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  outline: none; cursor: pointer;
+  transition: border-color .2s;
+}
+.status-select:focus { border-color: var(--gold); }
+.status-select.sel-compliant { border-color: var(--green); background: var(--green-soft); color: var(--green); }
+.status-select.sel-partial { border-color: var(--amber); background: var(--amber-soft); color: var(--amber); }
+.status-select.sel-noncompliant { border-color: var(--red); background: var(--red-soft); color: var(--red); }
+.remark-input {
+  border: 1.5px solid var(--border2);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px; font-family: 'DM Sans', sans-serif;
+  outline: none; min-width: 200px; flex: 1;
+  transition: border-color .2s;
+}
+.remark-input:focus { border-color: var(--gold); }
+.evidence-upload-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 6px;
+  font-size: 12px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+  cursor: pointer; border: 1.5px dashed var(--border2);
+  background: transparent; color: var(--muted);
+  transition: all .2s; white-space: nowrap;
+}
+.evidence-upload-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-soft); }
+.evidence-upload-btn.has-file { border-style: solid; border-color: var(--green); color: var(--green); background: var(--green-soft); }
+.control-side {
+  padding: 16px 12px;
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  align-items: flex-end; justify-content: flex-start;
+  gap: 8px; min-width: 80px;
+}
+
+/* ── FILTER BAR ── */
+.filter-bar {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+.search-input {
+  border: 1.5px solid var(--border2);
+  border-radius: 8px; padding: 9px 14px;
+  font-size: 13px; font-family: 'DM Sans', sans-serif;
+  outline: none; flex: 1; min-width: 200px;
+}
+.search-input:focus { border-color: var(--gold); }
+.filter-chip {
+  padding: 6px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+  border: 1.5px solid var(--border2); background: transparent;
+  cursor: pointer; transition: all .2s; color: var(--muted);
+}
+.filter-chip.active { border-color: var(--ink); background: var(--ink); color: #fff; }
+
+/* ── SUMMARY STATS ── */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px 20px;
+  box-shadow: var(--shadow);
+}
+.stat-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 6px; }
+.stat-value { font-family: 'DM Serif Display', serif; font-size: 32px; }
+.stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.stat-compliant { border-top: 3px solid var(--green); }
+.stat-partial { border-top: 3px solid var(--amber); }
+.stat-noncompliant { border-top: 3px solid var(--red); }
+.stat-total { border-top: 3px solid var(--gold); }
+
+/* ── MAPPING TABLE ── */
+.mapping-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mapping-table th {
+  text-align: left; padding: 10px 14px;
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .8px;
+  background: var(--surface); border-bottom: 2px solid var(--border);
+}
+.mapping-table td {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.mapping-table tr:hover td { background: var(--surface); }
+.map-badge {
+  display: inline-block;
+  padding: 2px 7px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 600;
+  margin: 1px;
+}
+.map-iso { background: var(--blue-soft); color: var(--blue); }
+.map-soc { background: #f3e8ff; color: #7c3aed; }
+
+/* ── CHART CONTAINERS ── */
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+.chart-card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px; box-shadow: var(--shadow);
+}
+.chart-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+.chart-sub { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+.chart-wrap { position: relative; height: 280px; }
+
+/* ── GAP METER ── */
+.gap-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+}
+.gap-item:last-child { border-bottom: none; }
+.gap-label { font-size: 13px; font-weight: 600; min-width: 120px; }
+.gap-bar-wrap { flex: 1; background: var(--border); border-radius: 99px; height: 10px; overflow: hidden; }
+.gap-bar-fill { height: 100%; border-radius: 99px; transition: width .8s ease; }
+.gap-pct { font-size: 13px; font-weight: 700; min-width: 40px; text-align: right; }
+
+/* ── REPORT ── */
+.report-header {
+  background: linear-gradient(135deg, var(--ink) 0%, var(--ink2) 100%);
+  border-radius: 14px; padding: 32px 36px;
+  color: #fff; margin-bottom: 24px;
+  display: flex; align-items: flex-start; justify-content: space-between;
+}
+.report-title { font-family: 'DM Serif Display', serif; font-size: 26px; margin-bottom: 6px; }
+.report-meta { font-size: 13px; opacity: .6; line-height: 1.8; }
+.report-score-ring {
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  border: 6px solid rgba(255,255,255,.15);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.report-score-num { font-family: 'DM Serif Display', serif; font-size: 30px; color: var(--gold2); }
+.report-score-label { font-size: 10px; opacity: .6; letter-spacing: 1px; text-transform: uppercase; }
+
+.report-section-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px; margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+}
+
+.report-controls-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.report-controls-table th {
+  text-align: left; padding: 9px 12px;
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .7px;
+  background: var(--surface); border-bottom: 2px solid var(--border);
+  position: sticky; top: 0;
+}
+.report-controls-table td {
+  padding: 9px 12px; border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.report-controls-table tr:hover td { background: var(--surface); }
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  text-align: center; padding: 60px 20px;
+  color: var(--muted);
+}
+.empty-icon { font-size: 48px; margin-bottom: 12px; opacity: .4; }
+.empty-title { font-weight: 700; font-size: 16px; margin-bottom: 6px; color: var(--ink3); }
+.empty-sub { font-size: 13px; }
+
+/* ── INFO BOX ── */
+.info-box {
+  background: var(--blue-soft); border: 1px solid #bfdbfe;
+  border-radius: 8px; padding: 12px 16px;
+  font-size: 13px; color: #1e40af;
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 20px;
+}
+.info-box.gold { background: var(--gold-soft); border-color: #fcd34d; color: #92400e; }
+
+/* ── SCROLLABLE TABLE WRAPPER ── */
+.table-scroll { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+.table-scroll .mapping-table { margin: 0; }
+
+/* ── DIVIDER ── */
+.divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+/* ── NAV ACTIONS ── */
+.nav-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border); }
+
+/* ── LEGEND ── */
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--ink); color: #fff;
+  padding: 12px 20px; border-radius: 10px;
+  font-size: 13px; font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(80px); opacity: 0;
+  transition: all .3s ease;
+  z-index: 1000;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .chart-grid { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+  .audit-cards { grid-template-columns: 1fr; }
+  .main { padding: 20px 16px; }
+}
+
+/* ── SECTION HEADER ── */
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
+
+/* hidden file input */
+input[type="file"] { display: none; }
+
+.file-name-label {
+  font-size: 11px; color: var(--green); font-weight: 500;
+  max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── CLIENT MANAGER ── */
+#client-manager-overlay { animation: cmFadeIn .25s ease; }
+@keyframes cmFadeIn {
+  from { opacity:0; }
+  to   { opacity:1; }
+}
+#cm-list::-webkit-scrollbar { width: 6px; }
+#cm-list::-webkit-scrollbar-track { background: transparent; }
+#cm-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+#cm-search:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212,168,83,.15); }
+.cm-card-btn-resume {
+  background: var(--ink); color: #fff; border: none;
+  padding: 8px 16px; border-radius: 7px;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+  white-space: nowrap; transition: background .2s;
+}
+.cm-card-btn-resume:hover { background: var(--ink2); }
+
+/* ── AUTOSAVE BADGE ── */
+#header-autosave {
+  font-size: 11px;
+  color: var(--gold2);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px;
+  animation: fadeInOut 2s ease forwards;
+}
+@keyframes fadeInOut {
+  0%   { opacity: 0; transform: translateY(4px); }
+  20%  { opacity: 1; transform: translateY(0); }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ── ACTIVE CLIENT CHIP ── */
+#active-client-chip { transition: all .3s; }
+
+
+/* ═══ AI ASSISTANT — Works Offline + Online ═══ */
+#ai-fab{position:fixed;bottom:28px;right:28px;z-index:9999;width:58px;height:58px;
+  border-radius:50%;background:linear-gradient(135deg,#0284c7,#0ea5e9);
+  border:none;cursor:pointer;box-shadow:0 4px 24px rgba(2,132,199,.55);
+  font-size:22px;display:flex;align-items:center;justify-content:center;
+  color:#fff;transition:all .22s;animation:fabglow 3s ease-in-out infinite;}
+#ai-fab:hover{transform:scale(1.1);}
+@keyframes fabglow{0%,100%{box-shadow:0 4px 24px rgba(2,132,199,.55)}
+  50%{box-shadow:0 6px 32px rgba(2,132,199,.85)}}
+#ai-panel{position:fixed;bottom:98px;right:28px;z-index:9999;width:370px;height:500px;
+  background:#fff;border-radius:18px;box-shadow:0 24px 64px rgba(0,0,0,.22);
+  display:none;flex-direction:column;overflow:hidden;border:1px solid var(--border);
+  animation:aipop .22s cubic-bezier(.34,1.56,.64,1);}
+@keyframes aipop{from{opacity:0;transform:translateY(14px) scale(.95)}
+  to{opacity:1;transform:translateY(0) scale(1)}}
+.aih{background:linear-gradient(135deg,#0c4a6e,#0284c7);padding:13px 16px;
+  display:flex;align-items:center;justify-content:space-between;}
+.aih-l{display:flex;align-items:center;gap:9px;}
+.aih-av{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.2);
+  display:flex;align-items:center;justify-content:center;font-size:15px;}
+.aih-t{font-size:13px;font-weight:700;color:#fff;}
+.aih-s{font-size:10px;color:rgba(255,255,255,.6);}
+.aih-mode{font-size:9px;padding:2px 7px;border-radius:20px;font-weight:700;
+  background:rgba(255,255,255,.15);color:rgba(255,255,255,.9);}
+.aih-x{background:rgba(255,255,255,.15);border:none;color:#fff;width:26px;height:26px;
+  border-radius:7px;cursor:pointer;font-size:13px;display:flex;align-items:center;
+  justify-content:center;}
+.aih-x:hover{background:rgba(255,255,255,.28);}
+.ai-msgs{flex:1;overflow-y:auto;padding:12px 13px;display:flex;flex-direction:column;gap:8px;}
+.ai-msgs::-webkit-scrollbar{width:4px;}
+.ai-msgs::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.aimsg{display:flex;gap:7px;animation:min .18s ease;}
+@keyframes min{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.aimsg.u{flex-direction:row-reverse;}
+.aibub{max-width:86%;padding:8px 12px;border-radius:13px;font-size:12.5px;line-height:1.6;}
+.aimsg.ai .aibub{background:var(--surface);color:var(--ink);border-bottom-left-radius:3px;}
+.aimsg.u  .aibub{background:#0284c7;color:#fff;border-bottom-right-radius:3px;}
+.aiav{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;
+  align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:2px;}
+.aimsg.ai .aiav{background:#e0f2fe;color:#0284c7;}
+.aimsg.u  .aiav{background:#0369a1;color:rgba(255,255,255,.85);}
+.ai-qs{padding:0 12px 7px;display:flex;flex-wrap:wrap;gap:5px;}
+.ai-q{padding:4px 9px;border-radius:20px;font-size:11px;font-weight:600;
+  border:1.5px solid var(--border2);background:transparent;cursor:pointer;
+  color:var(--muted);transition:all .15s;}
+.ai-q:hover{border-color:#0284c7;color:#0284c7;background:#e0f2fe;}
+.ai-ft{padding:9px 12px 13px;border-top:1px solid var(--border);
+  display:flex;gap:7px;align-items:flex-end;}
+.ai-ft textarea{flex:1;border:1.5px solid var(--border2);border-radius:10px;
+  padding:7px 11px;font-size:12.5px;font-family:'DM Sans',sans-serif;
+  resize:none;outline:none;line-height:1.4;max-height:78px;min-height:36px;
+  transition:border-color .2s;}
+.ai-ft textarea:focus{border-color:#0284c7;}
+.ai-send{width:36px;height:36px;border-radius:9px;flex-shrink:0;
+  background:#0284c7;color:#fff;border:none;cursor:pointer;font-size:15px;
+  display:flex;align-items:center;justify-content:center;}
+.ai-send:hover{background:#0369a1;}
+.ai-typ{display:flex;gap:4px;padding:2px 0;}
+.ai-typ span{width:7px;height:7px;border-radius:50%;background:var(--muted);
+  animation:td 1.1s infinite ease-in-out;}
+.ai-typ span:nth-child(2){animation-delay:.18s;}
+.ai-typ span:nth-child(3){animation-delay:.36s;}
+@keyframes td{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
+/* Suggest btn */
+.ai-sb{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;
+  border-radius:6px;font-size:11px;font-weight:600;font-family:'DM Sans',sans-serif;
+  cursor:pointer;border:1.5px solid #bae6fd;background:#f0f9ff;color:#0284c7;
+  transition:all .18s;white-space:nowrap;}
+.ai-sb:hover{background:#e0f2fe;border-color:#0284c7;}
+.ai-sb:disabled{opacity:.55;cursor:wait;}
+.ai-sbox{display:none;margin-top:7px;padding:9px 11px;background:#f0f9ff;
+  border:1px solid #bae6fd;border-radius:8px;font-size:12px;color:#0c4a6e;line-height:1.55;}
+.ai-use{display:inline-flex;align-items:center;gap:4px;margin-top:7px;padding:4px 9px;
+  border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;
+  background:#0284c7;color:#fff;border:none;}
+.ai-use:hover{background:#0369a1;}
+/* Evidence scan */
+.ev-sb{display:none;padding:5px 9px;border-radius:6px;font-size:11px;font-weight:600;
+  font-family:'DM Sans',sans-serif;cursor:pointer;border:1.5px solid #bae6fd;
+  background:#f0f9ff;color:#0284c7;transition:all .18s;white-space:nowrap;}
+.ev-sb:hover{background:#e0f2fe;}
+.ev-sb:disabled{opacity:.55;cursor:wait;}
+.ev-res{display:none;margin-top:5px;padding:7px 11px;border-radius:7px;
+  font-size:11px;font-weight:600;align-items:center;gap:5px;flex-wrap:wrap;}
+.ev-ok{background:var(--green-soft);color:var(--green);}
+.ev-pt{background:var(--amber-soft);color:var(--amber);}
+.ev-no{background:var(--red-soft);color:var(--red);}
+/* Narrative */
+.ai-narr{background:linear-gradient(135deg,#f0f9ff,#e0f2fe);
+  border:1px solid #bae6fd;border-radius:10px;padding:15px 17px;
+  margin-bottom:16px;display:none;}
+.ai-narr-lbl{font-size:11px;font-weight:700;color:#0284c7;text-transform:uppercase;
+  letter-spacing:.8px;margin-bottom:7px;}
+.ai-narr-txt{font-size:13px;color:var(--ink3);line-height:1.75;}
+/* AI tab */
+.ai-tab-hdr{background:linear-gradient(135deg,#0c4a6e,#0284c7);border-radius:14px;
+  padding:24px 28px;margin-bottom:20px;color:#fff;}
+.ai-tab-hdr h2{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:4px;}
+.ai-tab-hdr p{font-size:13px;opacity:.7;margin:0;}
+.ai-fg{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
+.ai-fc{background:#fff;border:1px solid var(--border);border-radius:11px;
+  padding:16px 18px;box-shadow:var(--shadow);}
+.ai-fc-icon{font-size:22px;margin-bottom:8px;}
+.ai-fc-t{font-size:13px;font-weight:700;margin-bottom:5px;}
+.ai-fc-d{font-size:12px;color:var(--muted);line-height:1.55;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sp{width:12px;height:12px;border:2px solid rgba(2,132,199,.2);
+  border-top-color:#0284c7;border-radius:50%;
+  animation:spin .65s linear infinite;display:inline-block;vertical-align:middle;}
+
+</style>
+</head>
+<body>
+
+<!-- CLIENT MANAGER OVERLAY -->
+<div id="client-manager-overlay" style="
+  position:fixed;inset:0;z-index:2000;
+  background:rgba(10,15,30,0.85);
+  backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;
+  padding:24px;
+">
+  <div style="
+    background:#fff;border-radius:20px;
+    width:100%;max-width:780px;
+    max-height:90vh;overflow:hidden;
+    display:flex;flex-direction:column;
+    box-shadow:0 32px 80px rgba(0,0,0,.35);
+  ">
+    <!-- Modal header -->
+    <div style="
+      background:var(--ink);padding:28px 32px 20px;
+      display:flex;align-items:flex-start;justify-content:space-between;
+    ">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <div style="
+            width:36px;height:36px;border-radius:10px;
+            background:linear-gradient(135deg,var(--gold),var(--gold2));
+            display:flex;align-items:center;justify-content:center;
+            font-family:'DM Serif Display',serif;font-size:18px;color:var(--ink);font-weight:700;
+          ">A</div>
+          <span style="font-family:'DM Serif Display',serif;font-size:22px;color:#fff">Audit<span style="color:var(--gold2)">IQ</span></span>
+        </div>
+        <div style="font-size:13px;color:rgba(255,255,255,.5);font-family:'JetBrains Mono',monospace;letter-spacing:1px">SELECT OR CREATE AN AUDIT CLIENT</div>
+      </div>
+      <button id="cm-close-btn" onclick="closeClientManager()" style="
+        background:rgba(255,255,255,.1);border:none;color:#fff;
+        width:32px;height:32px;border-radius:8px;cursor:pointer;
+        font-size:16px;display:flex;align-items:center;justify-content:center;
+        transition:background .2s;
+      " onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">✕</button>
+    </div>
+
+    <!-- Search + New -->
+    <div style="padding:20px 32px 0;display:flex;gap:12px">
+      <input id="cm-search" type="text" placeholder="Search clients..." oninput="renderClientCards()"
+        style="flex:1;border:1.5px solid var(--border2);border-radius:8px;padding:10px 14px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+      <button onclick="startNewClient()" class="btn btn-gold" style="white-space:nowrap">
+        + New Client
+      </button>
+    </div>
+
+    <!-- Stats row -->
+    <div id="cm-stats" style="padding:12px 32px 0;display:flex;gap:16px;font-size:12px;color:var(--muted)"></div>
+
+    <!-- Client cards list -->
+    <div id="cm-list" style="
+      flex:1;overflow-y:auto;padding:16px 32px 24px;
+      display:flex;flex-direction:column;gap:10px;
+    "></div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div id="delete-confirm-overlay" style="
+  position:fixed;inset:0;z-index:3000;
+  background:rgba(10,15,30,0.7);backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;
+">
+  <div style="background:#fff;border-radius:16px;padding:28px 32px;max-width:400px;width:90%;box-shadow:var(--shadow-lg)">
+    <div style="font-size:32px;margin-bottom:12px;text-align:center">🗑️</div>
+    <div style="font-family:'DM Serif Display',serif;font-size:18px;text-align:center;margin-bottom:8px">Delete Client?</div>
+    <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:20px" id="delete-confirm-msg">This will permanently remove all audit data for this client.</div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-outline" onclick="document.getElementById('delete-confirm-overlay').style.display='none'">Cancel</button>
+      <button class="btn btn-danger" id="delete-confirm-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="logo">
+    <div class="logo-mark">A</div>
+    <span class="logo-text">Audit<span>IQ</span></span>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px">
+    <div id="active-client-chip" style="display:none;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.15);
+      border-radius:20px;padding:4px 14px;
+      font-size:12px;color:rgba(255,255,255,.7);
+      display:flex;align-items:center;gap:8px;
+    ">
+      <span style="width:7px;height:7px;border-radius:50%;background:var(--gold2);display:inline-block"></span>
+      <span id="active-client-name">—</span>
+    </div>
+    <button onclick="openClientManager()" style="
+      background:rgba(255,255,255,.1);
+      border:1px solid rgba(255,255,255,.2);
+      color:#fff;padding:7px 16px;
+      border-radius:8px;font-size:12px;font-weight:600;
+      font-family:'DM Sans',sans-serif;cursor:pointer;
+      transition:background .2s;display:flex;align-items:center;gap:6px;
+    " onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
+      📁 My Clients
+      <span id="client-count-badge" style="
+        background:var(--gold);color:var(--ink);
+        border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;
+      ">0</span>
+    </button>
+    <span class="header-tag" style="display:none" id="header-autosave">💾 Saved</span>
+  </div>
+</header>
+
+<!-- TAB NAVIGATION -->
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab(0)">
+    <span class="tab-icon">🏢</span>
+    Client Setup
+    <span class="tab-num" id="tn0">1</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab(1)">
+    <span class="tab-icon">✅</span>
+    Audit Controls
+    <span class="tab-num" id="tn1">2</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab(2)">
+    <span class="tab-icon">🔗</span>
+    SOC 2 ↔ ISO Mapping
+    <span class="tab-num" id="tn2">3</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab(3)">
+    <span class="tab-icon">📊</span>
+    Gap Analysis
+    <span class="tab-num" id="tn3">4</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab(4)">
+    <span class="tab-icon">🥧</span>
+    Compliance Overview
+    <span class="tab-num" id="tn4">5</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab(5)">
+    <span class="tab-icon">📄</span>
+    Audit Report
+    <span class="tab-num" id="tn5">6</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab(6)" style="border-left:2px solid var(--border)">
+    <span class="tab-icon">🤖</span>
+    AI Assistant
+    <span class="tab-num" id="tn6" style="background:linear-gradient(135deg,#0284c7,#0ea5e9);color:#fff">7</span>
+  </button>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- ══════════════ TAB 1: CLIENT SETUP ══════════════ -->
+  <div class="tab-panel active" id="tab-0">
+    <h1 class="page-title">Client Setup</h1>
+    <p class="page-sub">Enter the client's details and select the audit framework to proceed.</p>
+
+    <div class="card">
+      <div class="form-grid">
+        <div class="field">
+          <label>Organization Name *</label>
+          <input type="text" id="clientName" placeholder="e.g. Acme Technologies Pvt. Ltd." oninput="updateClientInfo()">
+        </div>
+        <div class="field">
+          <label>Industry / Sector</label>
+          <select id="clientIndustry" onchange="updateClientInfo()">
+            <option value="">Select industry...</option>
+            <option>Information Technology</option>
+            <option>Banking & Financial Services</option>
+            <option>Healthcare</option>
+            <option>E-Commerce / Retail</option>
+            <option>Government / Public Sector</option>
+            <option>Manufacturing</option>
+            <option>Telecommunications</option>
+            <option>Education</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Auditor Name *</label>
+          <input type="text" id="auditorName" placeholder="e.g. Pari Patel" oninput="updateClientInfo()">
+        </div>
+        <div class="field">
+          <label>Auditor's Organization</label>
+          <input type="text" id="auditorOrg" placeholder="e.g. NFSU Goa" oninput="updateClientInfo()">
+        </div>
+        <div class="field">
+          <label>Audit Start Date *</label>
+          <input type="date" id="startDate" oninput="updateClientInfo()">
+        </div>
+        <div class="field">
+          <label>Audit End Date</label>
+          <input type="date" id="endDate" oninput="updateClientInfo()">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label>Select Audit Framework *</label>
+        <p style="font-size:12px;color:var(--muted);margin:6px 0 14px">Choose the compliance framework for this audit. Controls will be loaded accordingly.</p>
+        <div class="audit-cards">
+          <div class="audit-card" id="ac-iso" onclick="selectAuditType('iso')">
+            <div class="audit-card-title">ISO/IEC 27001:2022</div>
+            <div class="audit-card-sub">Information Security Management System — International standard covering 93 controls across 4 themes and 11 domains.</div>
+            <span class="audit-card-badge">93 Controls</span>
+          </div>
+          <div class="audit-card" id="ac-soc2" onclick="selectAuditType('soc2')">
+            <div class="audit-card-title">SOC 2 Type II</div>
+            <div class="audit-card-sub">AICPA Trust Services Criteria — covering Security, Availability, Processing Integrity, Confidentiality, and Privacy.</div>
+            <span class="audit-card-badge" style="background:#f3e8ff;color:#7c3aed">64 Controls</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="scope-card" style="display:none">
+      <div class="field form-grid full">
+        <div class="field">
+          <label>Audit Scope / Notes</label>
+          <textarea id="auditScope" placeholder="Describe the systems, departments, or processes in scope for this audit..." rows="3" oninput="updateClientInfo()"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <button class="btn btn-gold" onclick="proceedToControls()">
+        Continue to Controls &rarr;
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════ TAB 2: AUDIT CONTROLS ══════════════ -->
+  <div class="tab-panel" id="tab-1">
+    <div class="section-header">
+      <div>
+        <h1 class="page-title" id="controls-title">Audit Controls</h1>
+        <p class="page-sub" id="controls-sub">Assess each control below.</p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-outline btn-sm" onclick="expandAll()">Expand All</button>
+        <button class="btn btn-outline btn-sm" onclick="collapseAll()">Collapse All</button>
+      </div>
+    </div>
+
+    <div class="stats-row" id="controls-stats" style="display:none">
+      <div class="stat-card stat-total">
+        <div class="stat-label">Total Controls</div>
+        <div class="stat-value" id="st-total">0</div>
+        <div class="stat-sub">in framework</div>
+      </div>
+      <div class="stat-card stat-compliant">
+        <div class="stat-label">Compliant</div>
+        <div class="stat-value" style="color:var(--green)" id="st-compliant">0</div>
+        <div class="stat-sub" id="st-compliant-pct">0%</div>
+      </div>
+      <div class="stat-card stat-partial">
+        <div class="stat-label">Partial</div>
+        <div class="stat-value" style="color:var(--amber)" id="st-partial">0</div>
+        <div class="stat-sub" id="st-partial-pct">0%</div>
+      </div>
+      <div class="stat-card stat-noncompliant">
+        <div class="stat-label">Non-Compliant</div>
+        <div class="stat-value" style="color:var(--red)" id="st-nc">0</div>
+        <div class="stat-sub" id="st-nc-pct">0%</div>
+      </div>
+    </div>
+
+    <div class="filter-bar" id="filter-bar" style="display:none">
+      <input type="text" class="search-input" id="control-search" placeholder="Search controls..." oninput="filterControls()">
+      <button class="filter-chip active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-chip" onclick="setFilter('pending',this)">Pending</button>
+      <button class="filter-chip" onclick="setFilter('compliant',this)">Compliant</button>
+      <button class="filter-chip" onclick="setFilter('partial',this)">Partial</button>
+      <button class="filter-chip" onclick="setFilter('noncompliant',this)">Non-Compliant</button>
+    </div>
+
+    <div id="controls-container">
+      <div class="empty-state">
+        <div class="empty-icon">🏗️</div>
+        <div class="empty-title">No controls loaded yet</div>
+        <div class="empty-sub">Complete the Client Setup and select an audit framework to load controls.</div>
+      </div>
+    </div>
+
+    <div class="nav-actions" id="controls-nav" style="display:none">
+      <button class="btn btn-outline" onclick="switchTab(0)">&larr; Back</button>
+      <button class="btn btn-gold" onclick="switchTab(2)">Proceed to Mapping &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ TAB 3: SOC2 ↔ ISO MAPPING ══════════════ -->
+  <div class="tab-panel" id="tab-2">
+    <h1 class="page-title">SOC 2 ↔ ISO 27001 Mapping</h1>
+    <p class="page-sub">Cross-reference between SOC 2 Trust Services Criteria and ISO 27001:2022 controls.</p>
+
+    <div class="info-box gold">
+      <span>💡</span>
+      <span>This mapping shows how SOC 2 criteria relate to ISO 27001 controls. If your organization meets a SOC 2 criterion, the mapped ISO controls may already be partially or fully satisfied. Use this to plan cross-standard compliance efficiently.</span>
+    </div>
+
+    <div class="chart-card" style="margin-bottom:20px">
+      <div class="chart-title">Mapping Coverage Overview</div>
+      <div class="chart-sub">How many ISO controls are covered by SOC 2 criteria mapped to assessed controls</div>
+      <div class="chart-wrap"><canvas id="mappingChart"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="section-header" style="margin-bottom:16px">
+        <h3 style="font-size:15px;font-weight:700">Complete Mapping Table</h3>
+        <input type="text" class="search-input" style="max-width:280px" placeholder="Filter mapping..." id="map-search" oninput="filterMapping()">
+      </div>
+      <div class="table-scroll">
+        <table class="mapping-table" id="mapping-table-body">
+          <thead>
+            <tr>
+              <th>SOC 2 Criteria</th>
+              <th>SOC 2 Description</th>
+              <th>Mapped ISO 27001 Controls</th>
+              <th>Relevance</th>
+            </tr>
+          </thead>
+          <tbody id="mapping-rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <button class="btn btn-outline" onclick="switchTab(1)">&larr; Back</button>
+      <button class="btn btn-gold" onclick="switchTab(3)">Proceed to Gap Analysis &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ TAB 4: GAP ANALYSIS ══════════════ -->
+  <div class="tab-panel" id="tab-3">
+    <h1 class="page-title">Gap Analysis</h1>
+    <p class="page-sub">Understand how much additional work is required to comply with the secondary standard.</p>
+
+    <div class="info-box">
+      <span>📌</span>
+      <span id="gap-info-text">This analysis shows — based on your current audit results — what percentage of the secondary framework's controls would still need to be addressed to achieve full compliance.</span>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-title">Compliance Gap — By Domain</div>
+        <div class="chart-sub">Remaining work per domain area</div>
+        <div class="chart-wrap"><canvas id="gapBarChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Cross-Standard Readiness</div>
+        <div class="chart-sub">How ready your current compliance makes you for the other standard</div>
+        <div class="chart-wrap"><canvas id="gapRadarChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="report-section-title">Domain-Level Gap Breakdown</h3>
+      <div id="gap-breakdown"></div>
+    </div>
+
+    <div class="nav-actions">
+      <button class="btn btn-outline" onclick="switchTab(2)">&larr; Back</button>
+      <button class="btn btn-gold" onclick="switchTab(4)">Compliance Overview &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ TAB 5: COMPLIANCE OVERVIEW ══════════════ -->
+  <div class="tab-panel" id="tab-4">
+    <h1 class="page-title">Compliance Overview</h1>
+    <p class="page-sub">Visual summary of your overall compliance posture across all assessed controls.</p>
+
+    <div class="stats-row" id="ov-stats">
+      <div class="stat-card stat-total">
+        <div class="stat-label">Overall Score</div>
+        <div class="stat-value" id="ov-score" style="color:var(--gold)">—</div>
+        <div class="stat-sub">compliance score</div>
+      </div>
+      <div class="stat-card stat-compliant">
+        <div class="stat-label">Compliant</div>
+        <div class="stat-value" style="color:var(--green)" id="ov-c">0</div>
+        <div class="stat-sub" id="ov-c-pct">0%</div>
+      </div>
+      <div class="stat-card stat-partial">
+        <div class="stat-label">Partially Compliant</div>
+        <div class="stat-value" style="color:var(--amber)" id="ov-p">0</div>
+        <div class="stat-sub" id="ov-p-pct">0%</div>
+      </div>
+      <div class="stat-card stat-noncompliant">
+        <div class="stat-label">Non-Compliant</div>
+        <div class="stat-value" style="color:var(--red)" id="ov-n">0</div>
+        <div class="stat-sub" id="ov-n-pct">0%</div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-title">Overall Compliance Status</div>
+        <div class="chart-sub">Distribution of all assessed controls by status</div>
+        <div class="chart-wrap"><canvas id="overallPieChart"></canvas></div>
+        <div class="legend" id="pie-legend"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Compliance by Domain</div>
+        <div class="chart-sub">Compliant percentage per domain area</div>
+        <div class="chart-wrap"><canvas id="domainBarChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Control Status Heatmap by Domain</div>
+      <div class="chart-sub">Detailed breakdown: each bar shows compliant / partial / non-compliant within the domain</div>
+      <div class="chart-wrap" style="height:300px"><canvas id="stackedChart"></canvas></div>
+    </div>
+
+    <div class="nav-actions">
+      <button class="btn btn-outline" onclick="switchTab(3)">&larr; Back</button>
+      <button class="btn btn-gold" onclick="switchTab(5)">Generate Report &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ TAB 6: AUDIT REPORT ══════════════ -->
+  <div class="tab-panel" id="tab-5">
+    <div class="section-header">
+      <div>
+        <h1 class="page-title">Audit Report</h1>
+        <p class="page-sub">Complete compliance assessment report with all control details.</p>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline" onclick="window.print()">🖨️ Print</button>
+        <button class="btn btn-gold" onclick="downloadPDFReport()">⬇️ Download PDF</button>
+      </div>
+    </div>
+
+    <div id="report-container">
+      <div class="empty-state">
+        <div class="empty-icon">📄</div>
+        <div class="empty-title">Report will appear here</div>
+        <div class="empty-sub">Complete the audit controls assessment to generate the report.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB 7: AI ASSISTANT ══ -->
+  <div class="tab-panel" id="tab-6">
+    <div class="ai-tab-hdr">
+      <h2>🤖 AI Compliance Assistant</h2>
+      <p>Built-in GRC knowledge — works offline. Also uses real AI when internet is available. No API key needed.</p>
+    </div>
+    <div class="ai-fg">
+      <div class="ai-fc"><div class="ai-fc-icon">💬</div>
+        <div class="ai-fc-t">AI Chatbot</div>
+        <div class="ai-fc-d">Click the blue 🤖 button (bottom-right on any tab). Ask anything about ISO 27001, SOC 2 controls, evidence requirements, or GRC concepts. Works even without internet.</div>
+      </div>
+      <div class="ai-fc"><div class="ai-fc-icon">✍️</div>
+        <div class="ai-fc-t">Smart Remarks</div>
+        <div class="ai-fc-d">Set a control's status in Audit Controls, then click <strong>✨ AI Suggest</strong> — AI writes a professional audit observation for that specific control and status.</div>
+      </div>
+      <div class="ai-fc"><div class="ai-fc-icon">🔍</div>
+        <div class="ai-fc-t">Evidence Scanner</div>
+        <div class="ai-fc-d">Upload evidence for a control, then click <strong>🔍 AI Scan</strong> — AI checks whether the uploaded file actually satisfies that control requirement.</div>
+      </div>
+      <div class="ai-fc"><div class="ai-fc-icon">📝</div>
+        <div class="ai-fc-t">Report Narrative</div>
+        <div class="ai-fc-d">In the Audit Report tab, click <strong>✨ AI Summary</strong> — AI generates a formal executive paragraph based on your real compliance scores and findings.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:14px 16px;font-size:13px;color:#0c4a6e;display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:20px;flex-shrink:0">🛡️</span>
+        <div>
+          <strong>Works offline + online — No API key needed</strong><br>
+          <span style="font-size:12px;opacity:.85;line-height:1.6">
+          The AI has a built-in GRC knowledge base covering all ISO 27001 and SOC 2 controls — so it works even without internet. When internet is available it uses a free AI service for richer answers. Perfect for college presentations, demo environments, or offline use.
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING AI BUTTON -->
+  <button id="ai-fab" onclick="toggleChat()" title="AI Compliance Assistant">🤖</button>
+
+  <!-- AI CHAT PANEL -->
+  <div id="ai-panel">
+    <div class="aih">
+      <div class="aih-l">
+        <div class="aih-av">🧠</div>
+        <div>
+          <div class="aih-t">AI Compliance Assistant</div>
+          <div class="aih-s">Built-in GRC Knowledge · <span id="ai-mode-label">Offline Mode</span></div>
+        </div>
+      </div>
+      <button class="aih-x" onclick="toggleChat()">✕</button>
+    </div>
+    <div class="ai-msgs" id="ai-msgs">
+      <div class="aimsg ai">
+        <div class="aiav">🧠</div>
+        <div class="aibub">Hello! I'm your AI Compliance Assistant.<br><br>I work completely offline with built-in GRC knowledge. I can help with:<br>• ISO 27001 and SOC 2 control explanations<br>• What evidence to collect for each control<br>• GRC concepts and audit guidance<br>• Compliance requirements interpretation<br><br>What would you like to know?</div>
+      </div>
+    </div>
+    <div class="ai-qs">
+      <button class="ai-q" onclick="qSend('What evidence is needed for ISO 27001 A.5.1?')">A.5.1 evidence</button>
+      <button class="ai-q" onclick="qSend('Explain SOC 2 CC6.1')">Explain CC6.1</button>
+      <button class="ai-q" onclick="qSend('Difference between compliant and partially compliant')">Compliant vs partial</button>
+      <button class="ai-q" onclick="qSend('What are the main domains of ISO 27001 2022')">ISO 27001 domains</button>
+    </div>
+    <div class="ai-ft">
+      <textarea id="ai-inp" placeholder="Ask anything about ISO 27001, SOC 2, controls, evidence..." rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,78)+'px'"></textarea>
+      <button class="ai-send" onclick="sendChat()">➤</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  DATA: ISO 27001:2022 — All 93 Controls (Annex A)
+// ═══════════════════════════════════════════════════════════════
+const ISO_CONTROLS = [
+  // ── Theme A5: Organizational Controls ──
+  { id:'A.5.1',  domain:'A.5 Organizational Controls', name:'Policies for information security', desc:'Information security policy and topic-specific policies shall be defined, approved by management, published, communicated to and acknowledged by relevant personnel and relevant interested parties, and reviewed at planned intervals or if significant changes occur.' },
+  { id:'A.5.2',  domain:'A.5 Organizational Controls', name:'Information security roles and responsibilities', desc:'Information security roles and responsibilities shall be defined and allocated according to the organization needs.' },
+  { id:'A.5.3',  domain:'A.5 Organizational Controls', name:'Segregation of duties', desc:'Conflicting duties and conflicting areas of responsibility shall be segregated.' },
+  { id:'A.5.4',  domain:'A.5 Organizational Controls', name:'Management responsibilities', desc:'Management shall require all personnel to apply information security in accordance with the established information security policy, topic-specific policies and procedures of the organization.' },
+  { id:'A.5.5',  domain:'A.5 Organizational Controls', name:'Contact with authorities', desc:'The organization shall establish and maintain contact with relevant authorities.' },
+  { id:'A.5.6',  domain:'A.5 Organizational Controls', name:'Contact with special interest groups', desc:'The organization shall establish and maintain contact with special interest groups or other specialist security forums and professional associations.' },
+  { id:'A.5.7',  domain:'A.5 Organizational Controls', name:'Threat intelligence', desc:'Information relating to information security threats shall be collected and analysed to produce threat intelligence.' },
+  { id:'A.5.8',  domain:'A.5 Organizational Controls', name:'Information security in project management', desc:'Information security shall be integrated into project management.' },
+  { id:'A.5.9',  domain:'A.5 Organizational Controls', name:'Inventory of information and other associated assets', desc:'An inventory of information and other associated assets, including owners, shall be developed and maintained.' },
+  { id:'A.5.10', domain:'A.5 Organizational Controls', name:'Acceptable use of information and other associated assets', desc:'Rules for the acceptable use and procedures for handling information and other associated assets shall be identified, documented and implemented.' },
+  { id:'A.5.11', domain:'A.5 Organizational Controls', name:'Return of assets', desc:'Personnel and other interested parties as appropriate shall return all the organization\'s assets in their possession upon change or termination of their employment, contract or agreement.' },
+  { id:'A.5.12', domain:'A.5 Organizational Controls', name:'Classification of information', desc:'Information shall be classified according to the information security needs of the organization based on confidentiality, integrity, availability and relevant interested party requirements.' },
+  { id:'A.5.13', domain:'A.5 Organizational Controls', name:'Labelling of information', desc:'An appropriate set of procedures for information labelling shall be developed and implemented in accordance with the information classification scheme adopted by the organization.' },
+  { id:'A.5.14', domain:'A.5 Organizational Controls', name:'Information transfer', desc:'Information transfer rules, procedures, or agreements shall be in place for all types of transfer facilities within the organization and between the organization and other parties.' },
+  { id:'A.5.15', domain:'A.5 Organizational Controls', name:'Access control', desc:'Rules to control physical and logical access to information and other associated assets shall be established and implemented based on business and information security requirements.' },
+  { id:'A.5.16', domain:'A.5 Organizational Controls', name:'Identity management', desc:'The full life cycle of identities shall be managed.' },
+  { id:'A.5.17', domain:'A.5 Organizational Controls', name:'Authentication information', desc:'Allocation and management of authentication information shall be controlled by a management process, including advising personnel on appropriate handling of authentication information.' },
+  { id:'A.5.18', domain:'A.5 Organizational Controls', name:'Access rights', desc:'Access rights to information and other associated assets shall be provisioned, reviewed, modified and removed in accordance with the organization\'s topic-specific policy on and rules for access control.' },
+  { id:'A.5.19', domain:'A.5 Organizational Controls', name:'Information security in supplier relationships', desc:'Processes and procedures shall be defined and implemented to manage the information security risks associated with the use of supplier\'s products or services.' },
+  { id:'A.5.20', domain:'A.5 Organizational Controls', name:'Addressing information security within supplier agreements', desc:'Relevant information security requirements shall be established and agreed with each supplier based on the type of supplier relationship.' },
+  { id:'A.5.21', domain:'A.5 Organizational Controls', name:'Managing information security in the ICT supply chain', desc:'Processes and procedures shall be defined and implemented to manage the information security risks associated with the ICT products and services supply chain.' },
+  { id:'A.5.22', domain:'A.5 Organizational Controls', name:'Monitoring, review and change management of supplier services', desc:'The organization shall regularly monitor, review, evaluate and manage change in supplier information security practices and service delivery.' },
+  { id:'A.5.23', domain:'A.5 Organizational Controls', name:'Information security for use of cloud services', desc:'Processes for acquisition, use, management and exit from cloud services shall be established in accordance with the organization\'s information security requirements.' },
+  { id:'A.5.24', domain:'A.5 Organizational Controls', name:'Information security incident management planning and preparation', desc:'The organization shall plan and prepare for managing information security incidents by defining, establishing and communicating information security incident management processes, roles and responsibilities.' },
+  { id:'A.5.25', domain:'A.5 Organizational Controls', name:'Assessment and decision on information security events', desc:'The organization shall assess information security events and decide if they are to be categorized as information security incidents.' },
+  { id:'A.5.26', domain:'A.5 Organizational Controls', name:'Response to information security incidents', desc:'Information security incidents shall be responded to in accordance with the documented procedures.' },
+  { id:'A.5.27', domain:'A.5 Organizational Controls', name:'Learning from information security incidents', desc:'Knowledge gained from information security incidents shall be used to strengthen and improve the information security controls.' },
+  { id:'A.5.28', domain:'A.5 Organizational Controls', name:'Collection of evidence', desc:'The organization shall establish and implement procedures for the identification, collection, acquisition and preservation of evidence related to information security events.' },
+  { id:'A.5.29', domain:'A.5 Organizational Controls', name:'Information security during disruption', desc:'The organization shall plan how to maintain information security at an appropriate level during disruption.' },
+  { id:'A.5.30', domain:'A.5 Organizational Controls', name:'ICT readiness for business continuity', desc:'ICT readiness shall be planned, implemented, maintained and tested based on business continuity objectives and ICT continuity requirements.' },
+  { id:'A.5.31', domain:'A.5 Organizational Controls', name:'Legal, statutory, regulatory and contractual requirements', desc:'Legal, statutory, regulatory and contractual requirements relevant to information security and the organization\'s approach to meet these requirements shall be identified, documented and kept up to date.' },
+  { id:'A.5.32', domain:'A.5 Organizational Controls', name:'Intellectual property rights', desc:'The organization shall implement appropriate procedures to protect intellectual property rights.' },
+  { id:'A.5.33', domain:'A.5 Organizational Controls', name:'Protection of records', desc:'Records shall be protected from loss, destruction, falsification, unauthorized access and unauthorized release.' },
+  { id:'A.5.34', domain:'A.5 Organizational Controls', name:'Privacy and protection of PII', desc:'The organization shall identify and meet the requirements regarding the preservation of privacy and protection of PII according to applicable laws and regulations and contractual requirements.' },
+  { id:'A.5.35', domain:'A.5 Organizational Controls', name:'Independent review of information security', desc:'The organization\'s approach to managing information security and its implementation including people, processes and technologies shall be reviewed independently at planned intervals, or when significant changes occur.' },
+  { id:'A.5.36', domain:'A.5 Organizational Controls', name:'Compliance with policies, rules and standards for information security', desc:'Compliance with the organization\'s information security policy, topic-specific policies, rules and standards shall be regularly reviewed.' },
+  { id:'A.5.37', domain:'A.5 Organizational Controls', name:'Documented operating procedures', desc:'Operating procedures for information processing facilities shall be documented and made available to personnel who need them.' },
+
+  // ── A.6 People Controls ──
+  { id:'A.6.1',  domain:'A.6 People Controls', name:'Screening', desc:'Background verification checks on all candidates to become personnel shall be carried out prior to joining the organization and on an ongoing basis taking into consideration applicable laws, regulations and ethics and be proportional to the business requirements, the classification of the information to be accessed and the perceived risks.' },
+  { id:'A.6.2',  domain:'A.6 People Controls', name:'Terms and conditions of employment', desc:'The employment contractual agreements shall state the personnel\'s and the organization\'s responsibilities for information security.' },
+  { id:'A.6.3',  domain:'A.6 People Controls', name:'Information security awareness, education and training', desc:'Personnel of the organization and relevant interested parties shall receive appropriate information security awareness, education and training and regular updates of the organization\'s information security policy, topic-specific policies and procedures, as relevant for their job function.' },
+  { id:'A.6.4',  domain:'A.6 People Controls', name:'Disciplinary process', desc:'A disciplinary process shall be formalized and communicated to take actions against personnel and other relevant interested parties who have committed an information security policy violation.' },
+  { id:'A.6.5',  domain:'A.6 People Controls', name:'Responsibilities after termination or change of employment', desc:'Information security responsibilities and duties that remain valid after termination or change of employment shall be defined, enforced and communicated to relevant personnel and other interested parties.' },
+  { id:'A.6.6',  domain:'A.6 People Controls', name:'Confidentiality or non-disclosure agreements', desc:'Confidentiality or non-disclosure agreements reflecting the organization\'s needs for the protection of information shall be identified, documented, regularly reviewed and signed by personnel and other relevant interested parties.' },
+  { id:'A.6.7',  domain:'A.6 People Controls', name:'Remote working', desc:'Security measures shall be implemented when personnel are working remotely to protect information accessed, processed or stored outside the organization\'s premises.' },
+  { id:'A.6.8',  domain:'A.6 People Controls', name:'Information security event reporting', desc:'The organization shall provide a mechanism for personnel to report observed or suspected information security events through appropriate channels in a timely manner.' },
+
+  // ── A.7 Physical Controls ──
+  { id:'A.7.1',  domain:'A.7 Physical Controls', name:'Physical security perimeters', desc:'Security perimeters shall be defined and used to protect areas that contain information and other associated assets.' },
+  { id:'A.7.2',  domain:'A.7 Physical Controls', name:'Physical entry', desc:'Secure areas shall be protected by appropriate entry controls and access points.' },
+  { id:'A.7.3',  domain:'A.7 Physical Controls', name:'Securing offices, rooms and facilities', desc:'Physical security for offices, rooms and facilities shall be designed and implemented.' },
+  { id:'A.7.4',  domain:'A.7 Physical Controls', name:'Physical security monitoring', desc:'Premises shall be continuously monitored for unauthorized physical access.' },
+  { id:'A.7.5',  domain:'A.7 Physical Controls', name:'Protecting against physical and environmental threats', desc:'Protection against physical and environmental threats, such as natural disasters and other intentional or unintentional physical threats to infrastructure shall be designed and implemented.' },
+  { id:'A.7.6',  domain:'A.7 Physical Controls', name:'Working in secure areas', desc:'Security measures for working in secure areas shall be designed and implemented.' },
+  { id:'A.7.7',  domain:'A.7 Physical Controls', name:'Clear desk and clear screen', desc:'Clear desk rules for papers and removable storage media and clear screen rules for information processing facilities shall be defined and appropriately enforced.' },
+  { id:'A.7.8',  domain:'A.7 Physical Controls', name:'Equipment siting and protection', desc:'Equipment shall be sited securely and protected.' },
+  { id:'A.7.9',  domain:'A.7 Physical Controls', name:'Security of assets off-premises', desc:'Off-site assets shall be protected.' },
+  { id:'A.7.10', domain:'A.7 Physical Controls', name:'Storage media', desc:'Storage media shall be managed through their life cycle of acquisition, use, transportation and disposal in accordance with the organization\'s classification scheme and handling requirements.' },
+  { id:'A.7.11', domain:'A.7 Physical Controls', name:'Supporting utilities', desc:'Information processing facilities shall be protected from power failures and other disruptions caused by failures in supporting utilities.' },
+  { id:'A.7.12', domain:'A.7 Physical Controls', name:'Cabling security', desc:'Cables carrying power, data or supporting information services shall be protected from interception, interference or damage.' },
+  { id:'A.7.13', domain:'A.7 Physical Controls', name:'Equipment maintenance', desc:'Equipment shall be maintained correctly to ensure availability, integrity and confidentiality of information.' },
+  { id:'A.7.14', domain:'A.7 Physical Controls', name:'Secure disposal or re-use of equipment', desc:'Items of equipment containing storage media shall be verified to ensure that any sensitive data and licensed software has been removed or securely overwritten prior to disposal or re-use.' },
+
+  // ── A.8 Technological Controls ──
+  { id:'A.8.1',  domain:'A.8 Technological Controls', name:'User endpoint devices', desc:'Information stored on, processed by or accessible via user endpoint devices shall be protected.' },
+  { id:'A.8.2',  domain:'A.8 Technological Controls', name:'Privileged access rights', desc:'The allocation and use of privileged access rights shall be restricted and managed.' },
+  { id:'A.8.3',  domain:'A.8 Technological Controls', name:'Information access restriction', desc:'Access to information and other associated assets shall be restricted in accordance with the established topic-specific policy on access control.' },
+  { id:'A.8.4',  domain:'A.8 Technological Controls', name:'Access to source code', desc:'Read and write access to source code, development tools and software libraries shall be appropriately managed.' },
+  { id:'A.8.5',  domain:'A.8 Technological Controls', name:'Secure authentication', desc:'Secure authentication technologies and procedures shall be implemented based on information access restrictions and the topic-specific policy on access control.' },
+  { id:'A.8.6',  domain:'A.8 Technological Controls', name:'Capacity management', desc:'The use of resources shall be monitored and adjusted in line with current and expected capacity requirements.' },
+  { id:'A.8.7',  domain:'A.8 Technological Controls', name:'Protection against malware', desc:'Protection against malware shall be implemented and supported by appropriate user awareness.' },
+  { id:'A.8.8',  domain:'A.8 Technological Controls', name:'Management of technical vulnerabilities', desc:'Information about technical vulnerabilities of information systems in use shall be obtained in a timely fashion, the organization\'s exposure to such vulnerabilities shall be evaluated and appropriate measures taken.' },
+  { id:'A.8.9',  domain:'A.8 Technological Controls', name:'Configuration management', desc:'Configurations, including security configurations, of hardware, software, services and networks shall be established, documented, implemented, monitored and reviewed.' },
+  { id:'A.8.10', domain:'A.8 Technological Controls', name:'Information deletion', desc:'Information stored in information systems, devices or in any other storage media shall be deleted when no longer required.' },
+  { id:'A.8.11', domain:'A.8 Technological Controls', name:'Data masking', desc:'Data masking shall be used in accordance with the organization\'s topic-specific policy on access control and other related topic-specific policies, and business requirements, taking applicable legislation into consideration.' },
+  { id:'A.8.12', domain:'A.8 Technological Controls', name:'Data leakage prevention', desc:'Data leakage prevention measures shall be applied to systems, networks and any other devices that process, store or transmit sensitive information.' },
+  { id:'A.8.13', domain:'A.8 Technological Controls', name:'Information backup', desc:'Backup copies of information, software and systems shall be maintained and regularly tested in accordance with the agreed topic-specific policy on backup.' },
+  { id:'A.8.14', domain:'A.8 Technological Controls', name:'Redundancy of information processing facilities', desc:'Information processing facilities shall be implemented with redundancy sufficient to meet availability requirements.' },
+  { id:'A.8.15', domain:'A.8 Technological Controls', name:'Logging', desc:'Logs that record activities, exceptions, faults and other relevant events shall be produced, stored, protected and analysed.' },
+  { id:'A.8.16', domain:'A.8 Technological Controls', name:'Monitoring activities', desc:'Networks, systems and applications shall be monitored for anomalous behaviour and appropriate actions taken to evaluate potential information security incidents.' },
+  { id:'A.8.17', domain:'A.8 Technological Controls', name:'Clock synchronization', desc:'The clocks of information processing systems used by the organization shall be synchronized to approved time sources.' },
+  { id:'A.8.18', domain:'A.8 Technological Controls', name:'Use of privileged utility programs', desc:'The use of utility programs that might be capable of overriding system and application controls shall be restricted and tightly controlled.' },
+  { id:'A.8.19', domain:'A.8 Technological Controls', name:'Installation of software on operational systems', desc:'Procedures and measures shall be implemented to securely manage software installation on operational systems.' },
+  { id:'A.8.20', domain:'A.8 Technological Controls', name:'Networks security', desc:'Networks and network devices shall be secured, managed and controlled to protect information in systems and applications.' },
+  { id:'A.8.21', domain:'A.8 Technological Controls', name:'Security of network services', desc:'Security mechanisms, service levels and service requirements of network services shall be identified, implemented and monitored.' },
+  { id:'A.8.22', domain:'A.8 Technological Controls', name:'Segregation of networks', desc:'Groups of information services, users and information systems shall be segregated in the organization\'s networks.' },
+  { id:'A.8.23', domain:'A.8 Technological Controls', name:'Web filtering', desc:'Access to external websites shall be managed to reduce exposure to malicious content.' },
+  { id:'A.8.24', domain:'A.8 Technological Controls', name:'Use of cryptography', desc:'Rules for the effective use of cryptography, including cryptographic key management, shall be defined and implemented.' },
+  { id:'A.8.25', domain:'A.8 Technological Controls', name:'Secure development life cycle', desc:'Rules for the secure development of software and systems shall be established and applied.' },
+  { id:'A.8.26', domain:'A.8 Technological Controls', name:'Application security requirements', desc:'Information security requirements shall be identified, specified and approved when developing or acquiring applications.' },
+  { id:'A.8.27', domain:'A.8 Technological Controls', name:'Secure system architecture and engineering principles', desc:'Principles for engineering secure systems shall be established, documented, maintained and applied to any information system development activities.' },
+  { id:'A.8.28', domain:'A.8 Technological Controls', name:'Secure coding', desc:'Secure coding principles shall be applied to software development.' },
+  { id:'A.8.29', domain:'A.8 Technological Controls', name:'Security testing in development and acceptance', desc:'Security testing processes shall be defined and implemented in the development life cycle.' },
+  { id:'A.8.30', domain:'A.8 Technological Controls', name:'Outsourced development', desc:'The organization shall direct, monitor and review the activities related to outsourced system development.' },
+  { id:'A.8.31', domain:'A.8 Technological Controls', name:'Separation of development, test and production environments', desc:'Development, testing and production environments shall be separated and secured.' },
+  { id:'A.8.32', domain:'A.8 Technological Controls', name:'Change management', desc:'Changes to information processing facilities and information systems shall be subject to change management procedures.' },
+  { id:'A.8.33', domain:'A.8 Technological Controls', name:'Test information', desc:'Test information shall be appropriately selected, protected and managed.' },
+  { id:'A.8.34', domain:'A.8 Technological Controls', name:'Protection of information systems during audit testing', desc:'Audit tests and other assurance activities involving assessment of operational systems shall be planned and agreed between the tester and appropriate management.' }
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  DATA: SOC 2 Trust Services Criteria — All 64 Controls
+// ═══════════════════════════════════════════════════════════════
+const SOC2_CONTROLS = [
+  // CC1 — Control Environment
+  { id:'CC1.1', domain:'CC1 Control Environment', name:'COSO Principle 1 — Integrity and Ethical Values', desc:'The entity demonstrates a commitment to integrity and ethical values.' },
+  { id:'CC1.2', domain:'CC1 Control Environment', name:'COSO Principle 2 — Board Independence and Oversight', desc:'The board of directors demonstrates independence from management and exercises oversight of the development and performance of internal control.' },
+  { id:'CC1.3', domain:'CC1 Control Environment', name:'COSO Principle 3 — Organizational Structure and Reporting Lines', desc:'Management establishes, with board oversight, structures, reporting lines, and appropriate authorities and responsibilities in pursuit of objectives.' },
+  { id:'CC1.4', domain:'CC1 Control Environment', name:'COSO Principle 4 — Commitment to Competence', desc:'The entity demonstrates a commitment to attract, develop, and retain competent individuals in alignment with objectives.' },
+  { id:'CC1.5', domain:'CC1 Control Environment', name:'COSO Principle 5 — Accountability for Internal Control', desc:'The entity holds individuals accountable for their internal control responsibilities in pursuit of objectives.' },
+
+  // CC2 — Communication and Information
+  { id:'CC2.1', domain:'CC2 Communication & Information', name:'COSO Principle 13 — Relevant Quality Information', desc:'The entity obtains or generates and uses relevant, quality information to support the functioning of internal control.' },
+  { id:'CC2.2', domain:'CC2 Communication & Information', name:'COSO Principle 14 — Internal Communication', desc:'The entity internally communicates information, including objectives and responsibilities for internal control, necessary to support the functioning of internal control.' },
+  { id:'CC2.3', domain:'CC2 Communication & Information', name:'COSO Principle 15 — External Communication', desc:'The entity communicates with external parties regarding matters affecting the functioning of internal control.' },
+
+  // CC3 — Risk Assessment
+  { id:'CC3.1', domain:'CC3 Risk Assessment', name:'COSO Principle 6 — Objectives Specification', desc:'The entity specifies objectives with sufficient clarity to enable the identification and assessment of risks relating to objectives.' },
+  { id:'CC3.2', domain:'CC3 Risk Assessment', name:'COSO Principle 7 — Risk Identification and Analysis', desc:'The entity identifies risks to the achievement of its objectives across the entity and analyzes risks as a basis for determining how the risks should be managed.' },
+  { id:'CC3.3', domain:'CC3 Risk Assessment', name:'COSO Principle 8 — Fraud Risk Assessment', desc:'The entity considers the potential for fraud in assessing risks to the achievement of objectives.' },
+  { id:'CC3.4', domain:'CC3 Risk Assessment', name:'COSO Principle 9 — Change Identification and Assessment', desc:'The entity identifies and assesses changes that could significantly impact the system of internal control.' },
+
+  // CC4 — Monitoring Activities
+  { id:'CC4.1', domain:'CC4 Monitoring Activities', name:'COSO Principle 16 — Ongoing and Separate Evaluations', desc:'The entity selects, develops, and performs ongoing and/or separate evaluations to ascertain whether the components of internal control are present and functioning.' },
+  { id:'CC4.2', domain:'CC4 Monitoring Activities', name:'COSO Principle 17 — Evaluation and Communication of Deficiencies', desc:'The entity evaluates and communicates internal control deficiencies in a timely manner to those parties responsible for taking corrective action, including senior management and the board of directors, as appropriate.' },
+
+  // CC5 — Control Activities
+  { id:'CC5.1', domain:'CC5 Control Activities', name:'COSO Principle 10 — Selection and Development of Control Activities', desc:'The entity selects and develops control activities that contribute to the mitigation of risks to the achievement of objectives to acceptable levels.' },
+  { id:'CC5.2', domain:'CC5 Control Activities', name:'COSO Principle 11 — General Controls Over Technology', desc:'The entity also selects and develops general control activities over technology to support the achievement of objectives.' },
+  { id:'CC5.3', domain:'CC5 Control Activities', name:'COSO Principle 12 — Deployment of Control Activities via Policies and Procedures', desc:'The entity deploys control activities through policies that establish what is expected and in procedures that put policies into action.' },
+
+  // CC6 — Logical and Physical Access Controls
+  { id:'CC6.1', domain:'CC6 Logical & Physical Access', name:'Logical Access Security Software, Infrastructure, and Architectures', desc:'The entity implements logical access security software, infrastructure, and architectures over protected information assets to protect them from security events to meet the entity\'s objectives.' },
+  { id:'CC6.2', domain:'CC6 Logical & Physical Access', name:'User Registration and Authorization', desc:'Prior to issuing system credentials and granting system access, the entity registers and authorizes new internal and external users whose access is administered by the entity.' },
+  { id:'CC6.3', domain:'CC6 Logical & Physical Access', name:'Role-Based Access Control', desc:'The entity authorizes, modifies, or removes access to data, software, functions, and other protected information assets based on roles, responsibilities, or the system design and changes, giving consideration to the concepts of least privilege and segregation of duties, to meet the entity\'s objectives.' },
+  { id:'CC6.4', domain:'CC6 Logical & Physical Access', name:'Physical Access Controls', desc:'The entity restricts physical access to facilities and protected information assets (for example, data center facilities, back-up media storage, and other sensitive locations) to authorized personnel to meet the entity\'s objectives.' },
+  { id:'CC6.5', domain:'CC6 Logical & Physical Access', name:'Logical Access Controls for Removed Personnel', desc:'The entity discontinues logical and physical protections over physical assets only after the ability to use the assets to access environments containing system components has been removed and only through an approved process to meet the entity\'s objectives.' },
+  { id:'CC6.6', domain:'CC6 Logical & Physical Access', name:'External Threats — Boundary Protection', desc:'The entity implements controls to prevent or detect and act upon the introduction of unauthorized or malicious software to meet the entity\'s objectives.' },
+  { id:'CC6.7', domain:'CC6 Logical & Physical Access', name:'Transmission and Movement of Information', desc:'The entity restricts the transmission, movement, and removal of information to authorized internal and external users and processes, and protects it during transmission, movement, or removal to meet the entity\'s objectives.' },
+  { id:'CC6.8', domain:'CC6 Logical & Physical Access', name:'Prevention and Detection of Unauthorized Software', desc:'The entity implements controls to prevent or detect and act upon the introduction of unauthorized or malicious software to meet the entity\'s objectives.' },
+
+  // CC7 — System Operations
+  { id:'CC7.1', domain:'CC7 System Operations', name:'Vulnerability Management', desc:'To meet its objectives, the entity uses detection and monitoring procedures to identify changes to configurations or the environment that result, or could result, in the introduction of new vulnerabilities, and considers the need to update information security risk management processes and implement those updates.' },
+  { id:'CC7.2', domain:'CC7 System Operations', name:'Monitoring of Infrastructure and Software', desc:'The entity monitors its system components and the operation of those components for anomalies that are indicative of malicious acts, natural disasters, and errors affecting the entity\'s ability to meet its objectives; anomalies are analyzed to determine whether they represent security events.' },
+  { id:'CC7.3', domain:'CC7 System Operations', name:'Incident Identification and Response', desc:'The entity evaluates security events to determine whether they could or have resulted in a failure of the entity to meet its objectives (security incidents) and, if so, takes actions to prevent or address such failures.' },
+  { id:'CC7.4', domain:'CC7 System Operations', name:'Incident Response', desc:'The entity responds to identified security incidents by executing a defined incident-response program to understand, contain, remediate, and communicate security incidents, as appropriate.' },
+  { id:'CC7.5', domain:'CC7 System Operations', name:'Incident Recovery', desc:'The entity identifies, develops, and implements activities to recover from identified security incidents and communicates information about the incident to management and other affected parties.' },
+
+  // CC8 — Change Management
+  { id:'CC8.1', domain:'CC8 Change Management', name:'Change Management Process', desc:'The entity authorizes, designs, develops or acquires, configures, documents, tests, approves, and implements changes to infrastructure, data, software, and procedures to meet its objectives.' },
+
+  // CC9 — Risk Mitigation
+  { id:'CC9.1', domain:'CC9 Risk Mitigation', name:'Business Disruption Risk Mitigation', desc:'The entity identifies, selects, and develops risk mitigation activities for risks arising from potential business disruptions.' },
+  { id:'CC9.2', domain:'CC9 Risk Mitigation', name:'Vendor and Business Partner Risk Management', desc:'The entity assesses and manages risks associated with vendors and business partners.' },
+
+  // A — Availability
+  { id:'A1.1', domain:'A Availability', name:'Current and Forecasted Capacity', desc:'The entity maintains, monitors, and evaluates current processing capacity and use and forecasts future capacity requirements to support system availability objectives.' },
+  { id:'A1.2', domain:'A Availability', name:'Environmental Protections and Recovery Plan', desc:'The entity authorizes, designs, develops or acquires, implements, operates, approves, maintains, and monitors environmental protections, software, data back-up processes, and recovery infrastructure to meet its objectives.' },
+  { id:'A1.3', domain:'A Availability', name:'Recovery Plan Testing', desc:'The entity tests recovery plan procedures supporting system availability to meet its objectives.' },
+
+  // PI — Processing Integrity
+  { id:'PI1.1', domain:'PI Processing Integrity', name:'Complete and Accurate Processing', desc:'The entity obtains or generates, uses, and communicates relevant, quality information regarding the objectives related to processing, including definitions of data processed and product and service specifications, to support the use of products and services.' },
+  { id:'PI1.2', domain:'PI Processing Integrity', name:'System Inputs — Accuracy and Validity', desc:'The entity implements policies and procedures over system inputs, including controls over completeness and accuracy, to result in products, services, and reporting to meet the entity\'s objectives.' },
+  { id:'PI1.3', domain:'PI Processing Integrity', name:'System Processing — Complete and Accurate', desc:'The entity implements policies and procedures over system processing to result in products, services, and reporting to meet the entity\'s objectives.' },
+  { id:'PI1.4', domain:'PI Processing Integrity', name:'System Outputs — Complete, Accurate and Valid', desc:'The entity implements policies and procedures to make available or deliver output completely, accurately, and timely in accordance with specifications to meet the entity\'s objectives.' },
+  { id:'PI1.5', domain:'PI Processing Integrity', name:'Stored Items — Complete and Accurate', desc:'The entity implements policies and procedures to store inputs, items in processing, and outputs completely and accurately to meet the entity\'s objectives.' },
+
+  // C — Confidentiality
+  { id:'C1.1', domain:'C Confidentiality', name:'Identification and Maintenance of Confidential Information', desc:'The entity identifies and maintains confidential information to meet the entity\'s objectives related to confidentiality.' },
+  { id:'C1.2', domain:'C Confidentiality', name:'Disposal of Confidential Information', desc:'The entity disposes of confidential information to meet the entity\'s objectives related to confidentiality.' },
+
+  // P — Privacy
+  { id:'P1.1', domain:'P Privacy', name:'Privacy Notice', desc:'The entity provides notice to data subjects about its privacy practices to meet the entity\'s objectives related to privacy.' },
+  { id:'P2.1', domain:'P Privacy', name:'Choice and Consent', desc:'The entity communicates choices available regarding the collection, use, retention, disclosure, and disposal of personal information to the data subjects and the consequences, if any, of each choice. Explicit consent for the collection, use, retention, disclosure, and disposal of personal information is obtained from data subjects or other authorized persons as required.' },
+  { id:'P3.1', domain:'P Privacy', name:'Collection — Consistent With Objectives', desc:'Personal information is collected consistent with the entity\'s objectives related to privacy.' },
+  { id:'P3.2', domain:'P Privacy', name:'Collection of Sensitive Information', desc:'The entity collects sensitive personal information only for purposes related to accomplishing its objectives.' },
+  { id:'P4.1', domain:'P Privacy', name:'Use of Personal Information', desc:'The entity limits the use of personal information to the purposes identified in the privacy notice.' },
+  { id:'P4.2', domain:'P Privacy', name:'Retention of Personal Information', desc:'The entity retains personal information consistent with the entity\'s objectives related to privacy.' },
+  { id:'P4.3', domain:'P Privacy', name:'Disposal of Personal Information', desc:'The entity disposes of personal information consistent with the entity\'s objectives related to privacy.' },
+  { id:'P5.1', domain:'P Privacy', name:'Access to Personal Information', desc:'The entity grants identified and authenticated data subjects the ability to access their stored personal information for review and, upon request, provides physical or electronic copies of that information to data subjects to meet the entity\'s objectives related to privacy.' },
+  { id:'P5.2', domain:'P Privacy', name:'Correction of Personal Information', desc:'The entity corrects identified errors in personal information to meet the entity\'s objectives related to privacy.' },
+  { id:'P6.1', domain:'P Privacy', name:'Disclosure of Personal Information to Third Parties', desc:'The entity discloses personal information to third parties with the explicit consent of data subjects, and such disclosure is consistent with relevant laws and regulations.' },
+  { id:'P6.2', domain:'P Privacy', name:'Creation and Retention of System Account Records', desc:'The entity creates and retains a complete, accurate, and timely record of authorized disclosures of personal information to meet the entity\'s objectives related to privacy.' },
+  { id:'P6.3', domain:'P Privacy', name:'Disclosure to Authorities', desc:'The entity discloses personal information to government authorities only as required by applicable law or regulations or pursuant to court order, and only to the extent required.' },
+  { id:'P6.4', domain:'P Privacy', name:'Disclosure to Third Parties for Processing', desc:'The entity discloses personal information to third parties only for the purposes identified in the privacy notice, and with the explicit consent of data subjects as required.' },
+  { id:'P6.5', domain:'P Privacy', name:'Third-Party Data Processors', desc:'The entity uses third-party data processors only for purposes consistent with its privacy objectives and obtains assurances that such processors maintain appropriate privacy controls.' },
+  { id:'P6.6', domain:'P Privacy', name:'Personal Information for Marketing', desc:'The entity does not disclose personal information for marketing purposes without data subject consent.' },
+  { id:'P6.7', domain:'P Privacy', name:'Personal Information Transferred to Third Parties', desc:'The entity provides notification of transfers of personal information to third parties who may act as controllers.' },
+  { id:'P7.1', domain:'P Privacy', name:'Quality of Personal Information', desc:'The entity collects and maintains personal information that is accurate, up-to-date, complete, and relevant for the purposes identified in the privacy notice.' },
+  { id:'P8.1', domain:'P Privacy', name:'Privacy Complaint Handling', desc:'The entity implements a process for receiving, addressing, resolving, and communicating the resolution of inquiries, complaints, and disputes from data subjects and others and periodically monitors compliance with the entity\'s privacy practices to meet the entity\'s objectives related to privacy.' },
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  DATA: SOC 2 → ISO 27001 Mapping
+// ═══════════════════════════════════════════════════════════════
+const MAPPING_DATA = [
+  { soc:'CC1.1', socName:'Integrity and Ethical Values',          iso:['A.5.1','A.5.4','A.6.2'],            rel:'High' },
+  { soc:'CC1.2', socName:'Board Independence and Oversight',       iso:['A.5.1','A.5.35'],                   rel:'High' },
+  { soc:'CC1.3', socName:'Organizational Structure',               iso:['A.5.2','A.5.3','A.5.4'],            rel:'High' },
+  { soc:'CC1.4', socName:'Commitment to Competence',               iso:['A.6.1','A.6.3'],                    rel:'High' },
+  { soc:'CC1.5', socName:'Accountability for Internal Control',    iso:['A.5.2','A.5.4','A.5.36'],           rel:'High' },
+  { soc:'CC2.1', socName:'Relevant Quality Information',           iso:['A.5.1','A.5.37'],                   rel:'Medium' },
+  { soc:'CC2.2', socName:'Internal Communication',                 iso:['A.5.1','A.6.3','A.6.8'],            rel:'High' },
+  { soc:'CC2.3', socName:'External Communication',                 iso:['A.5.5','A.5.6','A.5.14'],           rel:'Medium' },
+  { soc:'CC3.1', socName:'Objectives Specification',               iso:['A.5.1','A.5.8'],                    rel:'Medium' },
+  { soc:'CC3.2', socName:'Risk Identification and Analysis',       iso:['A.5.7','A.5.8','A.5.24'],           rel:'High' },
+  { soc:'CC3.3', socName:'Fraud Risk Assessment',                  iso:['A.5.24','A.5.25','A.8.16'],         rel:'Medium' },
+  { soc:'CC3.4', socName:'Change Identification and Assessment',   iso:['A.5.8','A.8.32'],                   rel:'High' },
+  { soc:'CC4.1', socName:'Ongoing and Separate Evaluations',       iso:['A.5.35','A.5.36'],                  rel:'High' },
+  { soc:'CC4.2', socName:'Evaluation of Deficiencies',             iso:['A.5.27','A.5.36'],                  rel:'High' },
+  { soc:'CC5.1', socName:'Selection of Control Activities',        iso:['A.5.1','A.5.36'],                   rel:'Medium' },
+  { soc:'CC5.2', socName:'General Controls Over Technology',       iso:['A.8.1','A.8.9','A.8.20'],           rel:'High' },
+  { soc:'CC5.3', socName:'Deployment via Policies and Procedures', iso:['A.5.1','A.5.37'],                   rel:'High' },
+  { soc:'CC6.1', socName:'Logical Access Security',                iso:['A.5.15','A.5.16','A.5.17','A.8.3'], rel:'High' },
+  { soc:'CC6.2', socName:'User Registration and Authorization',    iso:['A.5.16','A.5.18','A.8.2'],          rel:'High' },
+  { soc:'CC6.3', socName:'Role-Based Access Control',              iso:['A.5.3','A.5.15','A.5.18','A.8.2'],  rel:'High' },
+  { soc:'CC6.4', socName:'Physical Access Controls',               iso:['A.7.1','A.7.2','A.7.3','A.7.4'],    rel:'High' },
+  { soc:'CC6.5', socName:'Access Removal for Departed Personnel',  iso:['A.5.11','A.6.5'],                   rel:'High' },
+  { soc:'CC6.6', socName:'Boundary Protection — External Threats', iso:['A.8.20','A.8.21','A.8.22','A.8.23'],rel:'High' },
+  { soc:'CC6.7', socName:'Transmission and Movement of Info',      iso:['A.5.14','A.8.12','A.8.24'],         rel:'High' },
+  { soc:'CC6.8', socName:'Prevention of Unauthorized Software',    iso:['A.8.7','A.8.19'],                   rel:'High' },
+  { soc:'CC7.1', socName:'Vulnerability Management',               iso:['A.8.8','A.8.16'],                   rel:'High' },
+  { soc:'CC7.2', socName:'Monitoring of Infrastructure',           iso:['A.8.15','A.8.16','A.8.17'],         rel:'High' },
+  { soc:'CC7.3', socName:'Incident Identification',                iso:['A.5.24','A.5.25'],                  rel:'High' },
+  { soc:'CC7.4', socName:'Incident Response',                      iso:['A.5.26','A.5.27'],                  rel:'High' },
+  { soc:'CC7.5', socName:'Incident Recovery',                      iso:['A.5.26','A.5.29','A.5.30'],         rel:'High' },
+  { soc:'CC8.1', socName:'Change Management Process',              iso:['A.8.32'],                           rel:'High' },
+  { soc:'CC9.1', socName:'Business Disruption Risk Mitigation',    iso:['A.5.29','A.5.30'],                  rel:'High' },
+  { soc:'CC9.2', socName:'Vendor and Partner Risk Management',     iso:['A.5.19','A.5.20','A.5.21','A.5.22'],rel:'High' },
+  { soc:'A1.1',  socName:'Current and Forecasted Capacity',        iso:['A.8.6','A.8.14'],                   rel:'High' },
+  { soc:'A1.2',  socName:'Environmental Protections',              iso:['A.7.5','A.7.11','A.8.13'],          rel:'High' },
+  { soc:'A1.3',  socName:'Recovery Plan Testing',                  iso:['A.5.30','A.8.13'],                  rel:'High' },
+  { soc:'PI1.1', socName:'Complete and Accurate Processing',       iso:['A.5.9','A.5.12'],                   rel:'Medium' },
+  { soc:'PI1.2', socName:'System Inputs Accuracy',                 iso:['A.8.15','A.8.29'],                  rel:'Medium' },
+  { soc:'PI1.3', socName:'System Processing',                      iso:['A.8.9','A.8.29'],                   rel:'Medium' },
+  { soc:'PI1.4', socName:'System Outputs Accuracy',                iso:['A.8.15','A.8.29'],                  rel:'Medium' },
+  { soc:'PI1.5', socName:'Stored Items Integrity',                 iso:['A.8.13','A.8.15'],                  rel:'Medium' },
+  { soc:'C1.1',  socName:'Identification of Confidential Info',    iso:['A.5.12','A.5.13'],                  rel:'High' },
+  { soc:'C1.2',  socName:'Disposal of Confidential Information',   iso:['A.8.10','A.7.14'],                  rel:'High' },
+  { soc:'P1.1',  socName:'Privacy Notice',                         iso:['A.5.34'],                           rel:'High' },
+  { soc:'P2.1',  socName:'Choice and Consent',                     iso:['A.5.34'],                           rel:'High' },
+  { soc:'P3.1',  socName:'Collection Consistent With Objectives',  iso:['A.5.34','A.5.31'],                  rel:'High' },
+  { soc:'P3.2',  socName:'Collection of Sensitive Information',    iso:['A.5.34','A.8.11'],                  rel:'High' },
+  { soc:'P4.1',  socName:'Use of Personal Information',            iso:['A.5.34'],                           rel:'High' },
+  { soc:'P4.2',  socName:'Retention of Personal Information',      iso:['A.5.33','A.5.34'],                  rel:'High' },
+  { soc:'P4.3',  socName:'Disposal of Personal Information',       iso:['A.5.34','A.8.10'],                  rel:'High' },
+  { soc:'P5.1',  socName:'Access to Personal Information',         iso:['A.5.34','A.5.18'],                  rel:'High' },
+  { soc:'P5.2',  socName:'Correction of Personal Information',     iso:['A.5.34'],                           rel:'Medium' },
+  { soc:'P6.1',  socName:'Disclosure to Third Parties',            iso:['A.5.14','A.5.34'],                  rel:'High' },
+  { soc:'P6.2',  socName:'System Account Records',                 iso:['A.8.15'],                           rel:'Medium' },
+  { soc:'P6.3',  socName:'Disclosure to Authorities',              iso:['A.5.31','A.5.34'],                  rel:'High' },
+  { soc:'P6.4',  socName:'Disclosure for Processing',              iso:['A.5.19','A.5.34'],                  rel:'High' },
+  { soc:'P6.5',  socName:'Third-Party Data Processors',            iso:['A.5.19','A.5.20'],                  rel:'High' },
+  { soc:'P6.6',  socName:'Personal Information for Marketing',     iso:['A.5.34'],                           rel:'Medium' },
+  { soc:'P6.7',  socName:'Transfers to Third Parties',             iso:['A.5.14','A.5.19'],                  rel:'High' },
+  { soc:'P7.1',  socName:'Quality of Personal Information',        iso:['A.5.34'],                           rel:'Medium' },
+  { soc:'P8.1',  socName:'Privacy Complaint Handling',             iso:['A.5.34','A.5.27'],                  rel:'High' },
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  PERSISTENCE — localStorage
+// ═══════════════════════════════════════════════════════════════
+const LS_CLIENTS    = 'auditiq_clients';
+const LS_ACTIVE     = 'auditiq_active';
+const LS_ASSESS_PFX = 'auditiq_assessments_';
+
+function lsGet(key) { try { return JSON.parse(localStorage.getItem(key)); } catch(e) { return null; } }
+function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { showToast('Storage full — clear old clients'); } }
+function getAllClients() { return lsGet(LS_CLIENTS) || []; }
+function saveAllClients(list) { lsSet(LS_CLIENTS, list); }
+function getAssessments(id) { return lsGet(LS_ASSESS_PFX + id) || {}; }
+function saveAssessments(id, data) { lsSet(LS_ASSESS_PFX + id, data); }
+
+// ═══════════════════════════════════════════════════════════════
+//  APP STATE
+// ═══════════════════════════════════════════════════════════════
+let state = {
+  clientId: null,
+  clientName: '', industry: '', auditorName: '', auditorOrg: '',
+  startDate: '', endDate: '', auditType: '', scope: '',
+  assessments: {}
+};
+let chartInstances = {};
+let autoSaveTimer = null;
+
+// ═══════════════════════════════════════════════════════════════
+//  TAB SWITCHING
+// ═══════════════════════════════════════════════════════════════
+function switchTab(idx) {
+  document.querySelectorAll('.tab-panel').forEach((p,i) => p.classList.toggle('active', i===idx));
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', i===idx));
+  if (idx === 2) renderMapping();
+  if (idx === 3) renderGapAnalysis();
+  if (idx === 4) renderOverview();
+  if (idx === 5) renderReport();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CLIENT MANAGER — open/close/list/create/load/delete
+// ═══════════════════════════════════════════════════════════════
+function openClientManager() {
+  document.getElementById('client-manager-overlay').style.display = 'flex';
+  // only allow closing via button if a client is already active
+  const closeBtn = document.getElementById('cm-close-btn');
+  if (!state.clientId) {
+    closeBtn.style.display = 'none';
+  } else {
+    closeBtn.style.display = 'flex';
+  }
+  renderClientCards();
+}
+
+function closeClientManager() {
+  if (!state.clientId) { showToast('⚠️ Please select or create a client first'); return; }
+  document.getElementById('client-manager-overlay').style.display = 'none';
+}
+
+function renderClientCards() {
+  const q = (document.getElementById('cm-search').value || '').toLowerCase();
+  const clients = getAllClients();
+  const filtered = q ? clients.filter(c =>
+    c.clientName.toLowerCase().includes(q) ||
+    (c.auditorName||'').toLowerCase().includes(q) ||
+    (c.industry||'').toLowerCase().includes(q) ||
+    (c.auditType||'').toLowerCase().includes(q)
+  ) : clients;
+
+  // Stats
+  const statsEl = document.getElementById('cm-stats');
+  statsEl.innerHTML = `<span><strong>${clients.length}</strong> clients saved</span> · <span>using localStorage</span>`;
+  // Update badge
+  document.getElementById('client-count-badge').textContent = clients.length;
+
+  const list = document.getElementById('cm-list');
+  if (filtered.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--muted)">
+      <div style="font-size:40px;margin-bottom:12px;opacity:.3">📋</div>
+      <div style="font-weight:700;font-size:15px;color:var(--ink3);margin-bottom:6px">${q ? 'No matching clients' : 'No clients yet'}</div>
+      <div style="font-size:13px">${q ? 'Try a different search.' : 'Click "New Client" to start your first audit.'}</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = '';
+  // Sort by updatedAt desc
+  [...filtered].sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0)).forEach(client => {
+    const assessments = getAssessments(client.id);
+    const controls = client.auditType === 'iso' ? ISO_CONTROLS : SOC2_CONTROLS;
+    const total = controls.length;
+    let c=0,p=0,n=0,assessed=0;
+    controls.forEach(ctrl => {
+      const s = assessments[ctrl.id]?.status;
+      if (s==='compliant'){c++;assessed++;}
+      else if(s==='partial'){p++;assessed++;}
+      else if(s==='noncompliant'){n++;assessed++;}
+      else if(s==='na') assessed++;
+    });
+    const score = total > 0 ? Math.round(((c+p*0.5)/total)*100) : 0;
+    const progress = total > 0 ? Math.round((assessed/total)*100) : 0;
+    const isActive = state.clientId === client.id;
+    const fwLabel = client.auditType === 'iso' ? 'ISO 27001' : 'SOC 2';
+    const fwColor = client.auditType === 'iso' ? '#2563eb' : '#7c3aed';
+    const fwBg   = client.auditType === 'iso' ? '#dbeafe' : '#f3e8ff';
+    const updDate = client.updatedAt ? new Date(client.updatedAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+      border:2px solid ${isActive ? 'var(--gold)' : 'var(--border)'};
+      border-radius:12px;padding:18px 20px;
+      background:${isActive ? 'var(--gold-soft)' : '#fff'};
+      transition:all .2s;cursor:pointer;
+      display:flex;align-items:center;gap:16px;
+    `;
+    card.onmouseover = () => { if(!isActive) card.style.borderColor='var(--border2)'; card.style.background=isActive?'var(--gold-soft)':'var(--surface)'; };
+    card.onmouseout = () => { card.style.borderColor=isActive?'var(--gold)':'var(--border)'; card.style.background=isActive?'var(--gold-soft)':'#fff'; };
+
+    card.innerHTML = `
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+          <div style="font-weight:700;font-size:15px;color:var(--ink)">${escHtml(client.clientName)}</div>
+          <span style="background:${fwBg};color:${fwColor};font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px">${fwLabel}</span>
+          ${isActive ? '<span style="background:var(--gold);color:var(--ink);font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px">ACTIVE</span>' : ''}
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+          ${escHtml(client.industry||'—')} · Auditor: ${escHtml(client.auditorName||'—')} · Last saved: ${updDate}
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="flex:1;background:var(--border);border-radius:99px;height:6px;overflow:hidden">
+            <div style="width:${progress}%;height:100%;border-radius:99px;background:${score>=70?'#16a34a':score>=40?'#d97706':'#2563eb'};transition:width .6s"></div>
+          </div>
+          <span style="font-size:11px;color:var(--muted);white-space:nowrap">${assessed}/${total} assessed</span>
+          <span style="font-size:12px;font-weight:700;color:${score>=70?'var(--green)':score>=40?'var(--amber)':'var(--muted)'}">${score}%</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0">
+        <button onclick="event.stopPropagation();loadClient('${client.id}')" style="
+          background:var(--ink);color:#fff;border:none;padding:8px 16px;
+          border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;
+          font-family:'DM Sans',sans-serif;white-space:nowrap;transition:background .2s;
+        " onmouseover="this.style.background='#1a2236'" onmouseout="this.style.background='var(--ink)'">
+          ${isActive ? '↩ Resume' : '▶ Open'}
+        </button>
+        <button onclick="event.stopPropagation();confirmDeleteClient('${client.id}','${escHtml(client.clientName)}')" style="
+          background:transparent;color:var(--red);border:1.5px solid #fca5a5;
+          padding:6px 16px;border-radius:7px;font-size:12px;font-weight:600;
+          cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;
+        " onmouseover="this.style.background='var(--red-soft)'" onmouseout="this.style.background='transparent'">
+          🗑 Delete
+        </button>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function genId() {
+  return 'c_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7);
+}
+
+function startNewClient() {
+  // Reset state to blank
+  state = { clientId: null, clientName:'', industry:'', auditorName:'', auditorOrg:'',
+            startDate:'', endDate:'', auditType:'', scope:'', assessments:{} };
+  // Reset form fields
+  document.getElementById('clientName').value = '';
+  document.getElementById('clientIndustry').value = '';
+  document.getElementById('auditorName').value = '';
+  document.getElementById('auditorOrg').value = '';
+  document.getElementById('startDate').valueAsDate = new Date();
+  document.getElementById('endDate').value = '';
+  if (document.getElementById('auditScope')) document.getElementById('auditScope').value = '';
+  document.querySelectorAll('.audit-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('scope-card').style.display = 'none';
+  // Reset controls container
+  document.getElementById('controls-container').innerHTML = `
+    <div class="empty-state"><div class="empty-icon">🏗️</div>
+    <div class="empty-title">No controls loaded yet</div>
+    <div class="empty-sub">Complete the Client Setup and select an audit framework to load controls.</div></div>`;
+  document.getElementById('controls-stats').style.display = 'none';
+  document.getElementById('filter-bar').style.display = 'none';
+  document.getElementById('controls-nav').style.display = 'none';
+  updateHeaderChip();
+  document.getElementById('client-manager-overlay').style.display = 'none';
+  switchTab(0);
+  showToast('📋 New client — fill in the details below');
+}
+
+function loadClient(id) {
+  const clients = getAllClients();
+  const client = clients.find(c => c.id === id);
+  if (!client) { showToast('Client not found'); return; }
+
+  // Load into state
+  state.clientId    = client.id;
+  state.clientName  = client.clientName  || '';
+  state.industry    = client.industry    || '';
+  state.auditorName = client.auditorName || '';
+  state.auditorOrg  = client.auditorOrg  || '';
+  state.startDate   = client.startDate   || '';
+  state.endDate     = client.endDate     || '';
+  state.auditType   = client.auditType   || '';
+  state.scope       = client.scope       || '';
+  state.assessments = getAssessments(id);
+
+  // Populate form
+  document.getElementById('clientName').value    = state.clientName;
+  document.getElementById('clientIndustry').value = state.industry;
+  document.getElementById('auditorName').value   = state.auditorName;
+  document.getElementById('auditorOrg').value    = state.auditorOrg;
+  document.getElementById('startDate').value     = state.startDate;
+  document.getElementById('endDate').value       = state.endDate;
+  if (document.getElementById('auditScope')) document.getElementById('auditScope').value = state.scope;
+
+  // Framework selection
+  document.querySelectorAll('.audit-card').forEach(c => c.classList.remove('selected'));
+  if (state.auditType) {
+    document.getElementById('ac-'+state.auditType)?.classList.add('selected');
+    document.getElementById('scope-card').style.display = 'block';
+  }
+
+  // Load controls if framework set
+  if (state.auditType) loadControls();
+
+  updateHeaderChip();
+  lsSet(LS_ACTIVE, id);
+  document.getElementById('client-manager-overlay').style.display = 'none';
+  switchTab(0);
+  showToast('✅ Resumed: ' + state.clientName);
+}
+
+function saveCurrentClient() {
+  if (!state.clientName.trim() || !state.auditType) return; // nothing to save yet
+
+  const clients = getAllClients();
+  const now = Date.now();
+
+  if (!state.clientId) {
+    state.clientId = genId();
+  }
+
+  const meta = {
+    id: state.clientId,
+    clientName:  state.clientName,
+    industry:    state.industry,
+    auditorName: state.auditorName,
+    auditorOrg:  state.auditorOrg,
+    startDate:   state.startDate,
+    endDate:     state.endDate,
+    auditType:   state.auditType,
+    scope:       state.scope,
+    createdAt:   clients.find(c=>c.id===state.clientId)?.createdAt || now,
+    updatedAt:   now
+  };
+
+  const idx = clients.findIndex(c => c.id === state.clientId);
+  if (idx >= 0) clients[idx] = meta;
+  else clients.push(meta);
+  saveAllClients(clients);
+  saveAssessments(state.clientId, state.assessments);
+  lsSet(LS_ACTIVE, state.clientId);
+  document.getElementById('client-count-badge').textContent = clients.length;
+
+  // Show autosave indicator
+  const ind = document.getElementById('header-autosave');
+  ind.style.display = 'inline';
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => { ind.style.display = 'none'; }, 2000);
+}
+
+function confirmDeleteClient(id, name) {
+  document.getElementById('delete-confirm-msg').textContent =
+    'This will permanently remove all audit data for "' + name + '". This cannot be undone.';
+  document.getElementById('delete-confirm-btn').onclick = () => {
+    deleteClient(id);
+    document.getElementById('delete-confirm-overlay').style.display = 'none';
+  };
+  document.getElementById('delete-confirm-overlay').style.display = 'flex';
+}
+
+function deleteClient(id) {
+  let clients = getAllClients().filter(c => c.id !== id);
+  saveAllClients(clients);
+  localStorage.removeItem(LS_ASSESS_PFX + id);
+  if (state.clientId === id) {
+    state = { clientId:null, clientName:'', industry:'', auditorName:'', auditorOrg:'',
+              startDate:'', endDate:'', auditType:'', scope:'', assessments:{} };
+    updateHeaderChip();
+  }
+  document.getElementById('client-count-badge').textContent = clients.length;
+  renderClientCards();
+  showToast('🗑️ Client deleted');
+}
+
+function updateHeaderChip() {
+  const chip = document.getElementById('active-client-chip');
+  const nameEl = document.getElementById('active-client-name');
+  if (state.clientName) {
+    chip.style.display = 'flex';
+    nameEl.textContent = state.clientName + (state.auditType ? ' · ' + (state.auditType==='iso'?'ISO 27001':'SOC 2') : '');
+  } else {
+    chip.style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CLIENT SETUP
+// ═══════════════════════════════════════════════════════════════
+function updateClientInfo() {
+  state.clientName = document.getElementById('clientName').value;
+  state.industry = document.getElementById('clientIndustry').value;
+  state.auditorName = document.getElementById('auditorName').value;
+  state.auditorOrg = document.getElementById('auditorOrg').value;
+  state.startDate = document.getElementById('startDate').value;
+  state.endDate = document.getElementById('endDate').value;
+  state.scope = document.getElementById('auditScope')?.value || '';
+  saveCurrentClient();
+  updateHeaderChip();
+}
+
+function selectAuditType(type) {
+  state.auditType = type;
+  document.querySelectorAll('.audit-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('ac-'+type)?.classList.add('selected');
+  document.getElementById('scope-card').style.display = 'block';
+  saveCurrentClient();
+  updateHeaderChip();
+}
+
+function proceedToControls() {
+  if (!state.clientName.trim()) { showToast('⚠️ Please enter an organization name'); return; }
+  if (!state.auditorName.trim()) { showToast('⚠️ Please enter the auditor name'); return; }
+  if (!state.auditType) { showToast('⚠️ Please select an audit framework'); return; }
+  if (!state.startDate) { showToast('⚠️ Please select the audit start date'); return; }
+  saveCurrentClient();
+  loadControls();
+  switchTab(1);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  LOAD CONTROLS
+// ═══════════════════════════════════════════════════════════════
+function loadControls() {
+  const controls = state.auditType === 'iso' ? ISO_CONTROLS : SOC2_CONTROLS;
+  const frameworkName = state.auditType === 'iso' ? 'ISO/IEC 27001:2022' : 'SOC 2 Trust Services Criteria';
+  document.getElementById('controls-title').textContent = frameworkName + ' — Audit Controls';
+  document.getElementById('controls-sub').textContent = `Assessing ${controls.length} controls for ${state.clientName}`;
+  document.getElementById('controls-stats').style.display = 'grid';
+  document.getElementById('filter-bar').style.display = 'flex';
+  document.getElementById('controls-nav').style.display = 'flex';
+  document.getElementById('st-total').textContent = controls.length;
+
+  // Group by domain
+  const domains = {};
+  controls.forEach(c => {
+    if (!domains[c.domain]) domains[c.domain] = [];
+    domains[c.domain].push(c);
+  });
+
+  const container = document.getElementById('controls-container');
+  container.innerHTML = '';
+
+  Object.entries(domains).forEach(([domain, ctrls]) => {
+    const sec = document.createElement('div');
+    sec.className = 'domain-section';
+    sec.dataset.domain = domain;
+
+    const hdr = document.createElement('div');
+    hdr.className = 'domain-header';
+    hdr.innerHTML = `
+      <div class="domain-title">${domain}</div>
+      <span class="domain-progress-text" id="dp-${slugify(domain)}">0/${ctrls.length}</span>
+      <span class="domain-count">${ctrls.length} controls</span>
+      <span class="domain-chevron">▾</span>`;
+    hdr.onclick = () => toggleDomain(hdr, domain);
+
+    const body = document.createElement('div');
+    body.className = 'domain-controls';
+    body.id = 'domain-body-' + slugify(domain);
+
+    ctrls.forEach((c, i) => {
+      const row = document.createElement('div');
+      row.className = 'control-row';
+      row.id = 'crow-' + c.id;
+      row.dataset.id = c.id;
+      row.dataset.status = 'pending';
+
+      const cur = state.assessments[c.id] || {};
+      const selClass = cur.status ? 'sel-'+cur.status : '';
+      const fileLabel = cur.fileName ? `<span class="file-name-label">📎 ${cur.fileName}</span>` : '';
+
+      row.innerHTML = `
+        <div class="control-num">${i+1}</div>
+        <div class="control-body">
+          <div class="control-id">${c.id}</div>
+          <div class="control-name">${c.name}</div>
+          <div class="control-desc">${c.desc}</div>
+          <div class="control-actions">
+            <select class="status-select ${selClass}" id="sel-${c.id}" onchange="setStatus('${c.id}', this)">
+              <option value="">— Select Status —</option>
+              <option value="compliant" ${cur.status==='compliant'?'selected':''}>✅ Compliant</option>
+              <option value="partial" ${cur.status==='partial'?'selected':''}>⚠️ Partially Compliant</option>
+              <option value="noncompliant" ${cur.status==='noncompliant'?'selected':''}>❌ Non-Compliant</option>
+              <option value="na" ${cur.status==='na'?'selected':''}>➖ N/A</option>
+            </select>
+            <input type="text" class="remark-input" id="rem-${c.id}"
+              placeholder="Add remark / observation..."
+              value="${cur.remark||''}"
+              onchange="setRemark('${c.id}', this.value)">
+            <button class="evidence-upload-btn ${cur.fileName?'has-file':''}" id="evbtn-${c.id}" onclick="triggerUpload('${c.id}')">
+              📎 ${cur.fileName ? 'Change Evidence' : 'Upload Evidence'}
+            </button>
+            ${fileLabel}
+            <input type="file" id="ev-${c.id}" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.xlsx,.csv,.txt" onchange="handleFileUpload('${c.id}', this)">
+          </div>
+        </div>
+        <div class="control-side">
+          <span class="status-badge status-pending" id="badge-${c.id}">Pending</span>
+        </div>`;
+
+      if (cur.status) updateBadge(c.id, cur.status);
+      body.appendChild(row);
+    });
+
+    sec.appendChild(hdr);
+    sec.appendChild(body);
+    container.appendChild(sec);
+  });
+
+  updateControlStats();
+}
+
+function slugify(s) { return s.replace(/[^a-z0-9]/gi,'_').toLowerCase(); }
+
+function toggleDomain(hdr, domain) {
+  const body = document.getElementById('domain-body-'+slugify(domain));
+  hdr.classList.toggle('open');
+  body.classList.toggle('open');
+}
+function expandAll() {
+  document.querySelectorAll('.domain-header').forEach(h => { h.classList.add('open'); });
+  document.querySelectorAll('.domain-controls').forEach(b => { b.classList.add('open'); });
+}
+function collapseAll() {
+  document.querySelectorAll('.domain-header').forEach(h => { h.classList.remove('open'); });
+  document.querySelectorAll('.domain-controls').forEach(b => { b.classList.remove('open'); });
+}
+
+function setStatus(id, sel) {
+  const v = sel.value;
+  if (!state.assessments[id]) state.assessments[id] = {};
+  state.assessments[id].status = v;
+  sel.className = 'status-select' + (v ? ' sel-'+v : '');
+  updateBadge(id, v);
+  updateControlStats();
+  updateDomainProgress(id);
+  document.getElementById('crow-'+id).dataset.status = v || 'pending';
+  saveCurrentClient(); // ← persist immediately
+}
+
+function setRemark(id, val) {
+  if (!state.assessments[id]) state.assessments[id] = {};
+  state.assessments[id].remark = val;
+  saveCurrentClient(); // ← persist immediately
+}
+
+function triggerUpload(id) { document.getElementById('ev-'+id).click(); }
+
+function handleFileUpload(id, input) {
+  if (!input.files.length) return;
+  const file = input.files[0];
+  if (!state.assessments[id]) state.assessments[id] = {};
+  state.assessments[id].fileName = file.name;
+  const btn = document.getElementById('evbtn-'+id);
+  btn.textContent = '📎 Change Evidence';
+  btn.classList.add('has-file');
+  // update file label
+  const body = btn.parentElement;
+  const existing = body.querySelector('.file-name-label');
+  if (existing) existing.remove();
+  const lbl = document.createElement('span');
+  lbl.className = 'file-name-label';
+  lbl.textContent = '📎 ' + file.name;
+  body.appendChild(lbl);
+  saveCurrentClient(); // ← persist file name
+  showToast('✅ Evidence attached: ' + file.name);
+}
+
+function updateBadge(id, status) {
+  const badge = document.getElementById('badge-'+id);
+  if (!badge) return;
+  const map = {
+    compliant: ['status-compliant', 'Compliant'],
+    partial: ['status-partial', 'Partial'],
+    noncompliant: ['status-noncompliant', 'Non-Compliant'],
+    na: ['status-pending', 'N/A'],
+    '': ['status-pending', 'Pending']
+  };
+  const [cls, label] = map[status] || map[''];
+  badge.className = 'status-badge ' + cls;
+  badge.textContent = label;
+}
+
+function updateControlStats() {
+  const controls = state.auditType === 'iso' ? ISO_CONTROLS : SOC2_CONTROLS;
+  const total = controls.length;
+  let c=0,p=0,n=0,assessed=0;
+  controls.forEach(ctrl => {
+    const s = state.assessments[ctrl.id]?.status;
+    if (s==='compliant') { c++; assessed++; }
+    else if (s==='partial') { p++; assessed++; }
+    else if (s==='noncompliant') { n++; assessed++; }
+    else if (s==='na') assessed++;
+  });
+  document.getElementById('st-compliant').textContent = c;
+  document.getElementById('st-partial').textContent = p;
+  document.getElementById('st-nc').textContent = n;
+  document.getElementById('st-compliant-pct').textContent = pct(c, total);
+  document.getElementById('st-partial-pct').textContent = pct(p, total);
+  document.getElementById('st-nc-pct').textContent = pct(n, total);
+}
+
+function updateDomainProgress(id) {
+  const controls = state.auditType === 'iso' ? ISO_CONTROLS : SOC2_CONTROLS;
+  const ctrl = controls.find(c => c.id === id);
+  if (!ctrl) return;
+  const domain = ctrl.domain;
+  const domControls = controls.filter(c => c.domain === domain);
+  const assessed = domControls.filter(c => state.assessments[c.id]?.status).length;
+  const el = document.getElementById('dp-'+slugify(domain));
+  if (el) el.textContent = assessed + '/' + domControls.length;
+}
+
+let activeFilter = 'all';
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  filterControls();
+}
+
+function filterControls() {
+  const q = document.getElementById('control-search').value.toLowerCase();
+  document.querySelectorAll('.control-row').forEach(row => {
+    const id = row.dataset.id;
+    const status = row.dataset.status || 'pending';
+    const text = row.textContent.toLowerCase();
+    const matchQ = !q || text.includes(q);
+    const matchF = activeFilter === 'all' || status === activeFilter;
+    row.style.display = matchQ && matchF ? '' : 'none';
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MAPPING TAB
+// ═══════════════════════════════════════════════════════════════
+let mappingChartInst = null;
+function renderMapping() {
+  renderMappingRows(MAPPING_DATA);
+  renderMappingChart();
+}
+
+function renderMappingRows(data) {
+  const tbody = document.getElementById('mapping-rows');
+  tbody.innerHTML = '';
+  data.forEach(m => {
+    const isoBadges = m.iso.map(i => `<span class="map-badge map-iso">${i}</span>`).join(' ');
+    const relColor = m.rel==='High'?'var(--green)':'var(--amber)';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="map-badge map-soc">${m.soc}</span></td>
+      <td style="font-size:12px">${m.socName}</td>
+      <td>${isoBadges}</td>
+      <td><span style="font-size:11px;font-weight:700;color:${relColor}">${m.rel}</span></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function filterMapping() {
+  const q = document.getElementById('map-search').value.toLowerCase();
+  const filtered = q ? MAPPING_DATA.filter(m =>
+    m.soc.toLowerCase().includes(q) || m.socName.toLowerCase().includes(q) ||
+    m.iso.some(i => i.toLowerCase().includes(q))
+  ) : MAPPING_DATA;
+  renderMappingRows(filtered);
+}
+
+function renderMappingChart() {
+  if (mappingChartInst) { mappingChartInst.destroy(); }
+  const ctx = document.getElementById('mappingChart').getContext('2d');
+
+  // Count ISO controls covered per SOC domain
+  const domainNames = [...new Set(SOC2_CONTROLS.map(c => c.domain.split(' ').slice(0,2).join(' ')))];
+  const covered = domainNames.map(d => {
+    const socIds = SOC2_CONTROLS.filter(c => c.domain.startsWith(d.split(' ')[0])).map(c => c.id);
+    const isoIds = new Set();
+    MAPPING_DATA.filter(m => socIds.includes(m.soc)).forEach(m => m.iso.forEach(i => isoIds.add(i)));
+    return isoIds.size;
+  });
+
+  mappingChartInst = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: domainNames,
+      datasets: [{ label: 'ISO Controls Covered', data: covered, backgroundColor: '#2563eb', borderRadius: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  GAP ANALYSIS TAB
+// ═══════════════════════════════════════════════════════════════
+function renderGapAnalysis() {
+  const otherFw = state.auditType === 'iso' ? SOC2_CONTROLS : ISO_CONTROLS;
+  const otherName = state.auditType === 'iso' ? 'SOC 2' : 'ISO 27001';
+  const currentFw = state.auditType === 'iso' ? ISO_CONTROLS : SOC2_CONTROLS;
+
+  document.getElementById('gap-info-text').textContent =
+    `You are auditing against ${state.auditType==='iso'?'ISO 27001':'SOC 2'}. This analysis shows how much work remains to also comply with ${otherName} based on your current assessment results.`;
+
+  // Compute gap per other-framework domain
+  const domains = {};
+  otherFw.forEach(c => {
+    if (!domains[c.domain]) domains[c.domain] = { total: 0, covered: 0 };
+    domains[c.domain].total++;
+
+    // Is this control covered by the current assessment via mapping?
+    let isCovered = false;
+    if (state.auditType === 'iso') {
+      // currently auditing ISO; check if this SOC control has all mapped ISOs compliant
+      const mapping = MAPPING_DATA.find(m => m.soc === c.id);
+      if (mapping) {
+        const statuses = mapping.iso.map(isoId => state.assessments[isoId]?.status || '');
+        isCovered = statuses.some(s => s === 'compliant' || s === 'partial');
+      }
+    } else {
+      // currently auditing SOC2; check if this ISO control is covered
+      const mappingItems = MAPPING_DATA.filter(m => m.iso.includes(c.id));
+      if (mappingItems.length) {
+        isCovered = mappingItems.some(m => {
+          const s = state.assessments[m.soc]?.status;
+          return s === 'compliant' || s === 'partial';
+        });
+      }
+    }
+    if (isCovered) domains[c.domain].covered++;
+  });
+
+  const domainLabels = Object.keys(domains).map(d => d.split(' ').slice(0,3).join(' '));
+  const gapPcts = Object.values(domains).map(d => Math.round((1 - d.covered/d.total)*100));
+  const readyPcts = Object.values(domains).map(d => Math.round((d.covered/d.total)*100));
+
+  // Bar chart — Gap per domain
+  destroyChart('gapBarChart');
+  const ctx1 = document.getElementById('gapBarChart').getContext('2d');
+  chartInstances.gapBarChart = new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: domainLabels,
+      datasets: [{
+        label: '% Still Required',
+        data: gapPcts,
+        backgroundColor: gapPcts.map(v => v > 60 ? '#dc2626' : v > 30 ? '#d97706' : '#16a34a'),
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { max: 100, grid: { color: '#f1f5f9' }, ticks: { callback: v => v+'%' } },
+        y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+
+  // Radar chart — readiness
+  destroyChart('gapRadarChart');
+  const ctx2 = document.getElementById('gapRadarChart').getContext('2d');
+  chartInstances.gapRadarChart = new Chart(ctx2, {
+    type: 'radar',
+    data: {
+      labels: domainLabels,
+      datasets: [{
+        label: `Readiness for ${otherName} (%)`,
+        data: readyPcts,
+        backgroundColor: 'rgba(212,168,83,0.2)',
+        borderColor: '#d4a853',
+        pointBackgroundColor: '#d4a853',
+        pointRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+      scales: { r: { min: 0, max: 100, ticks: { stepSize: 25, font: { size: 9 } } } }
+    }
+  });
+
+  // Breakdown list
+  const breakdown = document.getElementById('gap-breakdown');
+  breakdown.innerHTML = '';
+  Object.entries(domains).forEach(([domain, d]) => {
+    const readyPct = Math.round((d.covered/d.total)*100);
+    const gapPct = 100 - readyPct;
+    const color = gapPct > 60 ? '#dc2626' : gapPct > 30 ? '#d97706' : '#16a34a';
+    const item = document.createElement('div');
+    item.className = 'gap-item';
+    item.innerHTML = `
+      <div class="gap-label">${domain.split(' ').slice(0,3).join(' ')}</div>
+      <div class="gap-bar-wrap">
+        <div class="gap-bar-fill" style="width:${gapPct}%;background:${color}"></div>
+      </div>
+      <div class="gap-pct" style="color:${color}">${gapPct}%</div>
+      <div style="font-size:11px;color:var(--muted);min-width:100px">${d.covered}/${d.total} covered</div>`;
+    breakdown.appendChild(item);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  COMPLIANCE OVERVIEW TAB
+// ═══════════════════════════════════════════════════════════════
+function renderOverview() {
+  const controls = state.auditType === 'iso' ? ISO_CONTROLS : SOC2_CONTROLS;
+  const total = controls.length;
+  let c=0,p=0,n=0,na=0;
+  controls.forEach(ctrl => {
+    const s = state.assessments[ctrl.id]?.status;
+    if (s==='compliant') c++;
+    else if (s==='partial') p++;
+    else if (s==='noncompliant') n++;
+    else if (s==='na') na++;
+  });
+  const pending = total - c - p - n - na;
+  const score = total > 0 ? Math.round(((c + p*0.5)/total)*100) : 0;
+
+  document.getElementById('ov-score').textContent = score+'%';
+  document.getElementById('ov-c').textContent = c;
+  document.getElementById('ov-p').textContent = p;
+  document.getElementById('ov-n').textContent = n;
+  document.getElementById('ov-c-pct').textContent = pct(c,total);
+  document.getElementById('ov-p-pct').textContent = pct(p,total);
+  document.getElementById('ov-n-pct').textContent = pct(n,total);
+
+  // Overall Pie
+  destroyChart('overallPieChart');
+  const ctx1 = document.getElementById('overallPieChart').getContext('2d');
+  chartInstances.overallPieChart = new Chart(ctx1, {
+    type: 'doughnut',
+    data: {
+      labels: ['Compliant','Partially Compliant','Non-Compliant','N/A','Pending'],
+      datasets: [{ data: [c,p,n,na,pending],
+        backgroundColor: ['#16a34a','#d97706','#dc2626','#94a3b8','#e2e8f0'],
+        borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} (${pct(ctx.raw,total)})` } }
+      }
+    }
+  });
+
+  // Legend
+  const legendEl = document.getElementById('pie-legend');
+  legendEl.innerHTML = [
+    { label:'Compliant', val:c, color:'#16a34a' },
+    { label:'Partial', val:p, color:'#d97706' },
+    { label:'Non-Compliant', val:n, color:'#dc2626' },
+    { label:'N/A', val:na, color:'#94a3b8' },
+    { label:'Pending', val:pending, color:'#e2e8f0' }
+  ].map(i => `<div class="legend-item"><div class="legend-dot" style="background:${i.color}"></div>${i.label}: <strong>${i.val}</strong></div>`).join('');
+
+  // Domain Bar
+  const domainMap = {};
+  controls.forEach(ctrl => {
+    if (!domainMap[ctrl.domain]) domainMap[ctrl.domain] = { total:0, compliant:0 };
+    domainMap[ctrl.domain].total++;
+    if (state.assessments[ctrl.id]?.status === 'compliant') domainMap[ctrl.domain].compliant++;
+  });
+  const domLabels = Object.keys(domainMap).map(d => d.split(' ').slice(0,3).join(' '));
+  const domPcts = Object.values(domainMap).map(d => Math.round((d.compliant/d.total)*100));
+
+  destroyChart('domainBarChart');
+  const ctx2 = document.getElementById('domainBarChart').getContext('2d');
+  chartInstances.domainBarChart = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: domLabels,
+      datasets: [{ label: 'Compliant %', data: domPcts,
+        backgroundColor: domPcts.map(v => v >= 70 ? '#16a34a' : v >= 40 ? '#d97706' : '#dc2626'),
+        borderRadius: 6 }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { max: 100, ticks: { callback: v => v+'%' }, grid: { color: '#f1f5f9' } },
+        y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+
+  // Stacked bar
+  const domainKeys = Object.keys(domainMap);
+  const domShort = domainKeys.map(d => d.split(' ').slice(0,3).join(' '));
+  const stacked_c = [], stacked_p = [], stacked_n = [], stacked_na = [], stacked_pend = [];
+
+  domainKeys.forEach(domain => {
+    const domControls = controls.filter(c => c.domain === domain);
+    let dc=0,dp=0,dn=0,dna=0,dpend=0;
+    domControls.forEach(c => {
+      const s = state.assessments[c.id]?.status;
+      if (s==='compliant') dc++;
+      else if (s==='partial') dp++;
+      else if (s==='noncompliant') dn++;
+      else if (s==='na') dna++;
+      else dpend++;
+    });
+    stacked_c.push(dc); stacked_p.push(dp); stacked_n.push(dn);
+    stacked_na.push(dna); stacked_pend.push(dpend);
+  });
+
+  destroyChart('stackedChart');
+  const ctx3 = document.getElementById('stackedChart').getContext('2d');
+  chartInstances.stackedChart = new Chart(ctx3, {
+    type: 'bar',
+    data: {
+      labels: domShort,
+      datasets: [
+        { label: 'Compliant', data: stacked_c, backgroundColor: '#16a34a', stack: 'a', borderRadius: 0 },
+        { label: 'Partial', data: stacked_p, backgroundColor: '#d97706', stack: 'a' },
+        { label: 'Non-Compliant', data: stacked_n, backgroundColor: '#dc2626', stack: 'a' },
+        { label: 'N/A', data: stacked_na, backgroundColor: '#94a3b8', stack: 'a' },
+        { label: 'Pending', data: stacked_pend, backgroundColor: '#e2e8f0', stack: 'a' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 16 } } },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 9 } } },
+        y: { stacked: true, grid: { color: '#f1f5f9' } }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  REPORT TAB
+// ═══════════════════════════════════════════════════════════════
+function renderReport() {
+  const controls = state.auditType === 'iso' ? ISO_CONTROLS : SOC2_CONTROLS;
+  if (!state.clientName || !state.auditType) {
+    document.getElementById('report-container').innerHTML = `
+      <div class="empty-state"><div class="empty-icon">📄</div>
+      <div class="empty-title">Setup incomplete</div>
+      <div class="empty-sub">Complete client setup and load controls to generate a report.</div></div>`;
+    return;
+  }
+
+  const total = controls.length;
+  let c=0,p=0,n=0,na=0;
+  controls.forEach(ctrl => {
+    const s = state.assessments[ctrl.id]?.status;
+    if (s==='compliant') c++;
+    else if (s==='partial') p++;
+    else if (s==='noncompliant') n++;
+    else if (s==='na') na++;
+  });
+  const score = Math.round(((c + p*0.5)/total)*100);
+  const fw = state.auditType === 'iso' ? 'ISO/IEC 27001:2022' : 'SOC 2 Type II';
+
+  const domainMap = {};
+  controls.forEach(ctrl => {
+    if (!domainMap[ctrl.domain]) domainMap[ctrl.domain] = { total:0, c:0, p:0, n:0, na:0 };
+    domainMap[ctrl.domain].total++;
+    const s = state.assessments[ctrl.id]?.status;
+    if (s==='compliant') domainMap[ctrl.domain].c++;
+    else if (s==='partial') domainMap[ctrl.domain].p++;
+    else if (s==='noncompliant') domainMap[ctrl.domain].n++;
+    else if (s==='na') domainMap[ctrl.domain].na++;
+  });
+
+  const domSummaryRows = Object.entries(domainMap).map(([d,v]) => {
+    const dpct = Math.round((v.c/v.total)*100);
+    const bar = `<div class="progress-bar-wrap" style="width:100px;display:inline-block">
+      <div class="progress-bar-fill" style="width:${dpct}%;background:${dpct>=70?'#16a34a':dpct>=40?'#d97706':'#dc2626'}"></div></div>`;
+    return `<tr>
+      <td style="font-size:12px;font-weight:600">${d}</td>
+      <td style="text-align:center">${v.total}</td>
+      <td style="text-align:center;color:var(--green);font-weight:700">${v.c}</td>
+      <td style="text-align:center;color:var(--amber);font-weight:700">${v.p}</td>
+      <td style="text-align:center;color:var(--red);font-weight:700">${v.n}</td>
+      <td style="text-align:center">${bar} ${dpct}%</td>
+    </tr>`;
+  }).join('');
+
+  const controlRows = controls.map(ctrl => {
+    const a = state.assessments[ctrl.id] || {};
+    const statusMap = {
+      compliant: '<span class="status-badge status-compliant">Compliant</span>',
+      partial: '<span class="status-badge status-partial">Partial</span>',
+      noncompliant: '<span class="status-badge status-noncompliant">Non-Compliant</span>',
+      na: '<span class="status-badge status-pending">N/A</span>',
+      '': '<span class="status-badge status-pending">Pending</span>'
+    };
+    return `<tr>
+      <td><span class="map-badge ${state.auditType==='iso'?'map-iso':'map-soc'}">${ctrl.id}</span></td>
+      <td style="font-size:12px;font-weight:600;max-width:220px">${ctrl.name}</td>
+      <td style="font-size:11px;color:var(--muted);max-width:300px">${ctrl.desc.substring(0,120)}...</td>
+      <td>${statusMap[a.status||'']}</td>
+      <td style="font-size:11px;color:var(--muted)">${a.remark||'—'}</td>
+      <td style="font-size:11px">${a.fileName ? '📎 '+a.fileName : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('report-container').innerHTML = `
+    <div class="report-header">
+      <div>
+        <div class="report-title">Compliance Audit Report</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:10px">${fw}</div>
+        <div class="report-meta">
+          Organization: <strong style="color:#fff">${state.clientName}</strong><br>
+          Industry: ${state.industry||'Not specified'}<br>
+          Auditor: ${state.auditorName}${state.auditorOrg ? ' — '+state.auditorOrg : ''}<br>
+          Audit Period: ${state.startDate || 'N/A'} ${state.endDate ? '→ '+state.endDate : ''}<br>
+          Report Generated: ${new Date().toLocaleDateString('en-IN',{year:'numeric',month:'long',day:'numeric'})}
+        </div>
+      </div>
+      <div class="report-score-ring">
+        <div class="report-score-num">${score}%</div>
+        <div class="report-score-label">Score</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="report-section-title">Executive Summary</h3>
+      <div class="stats-row" style="margin-bottom:12px">
+        <div class="stat-card stat-total"><div class="stat-label">Total Controls</div><div class="stat-value">${total}</div></div>
+        <div class="stat-card stat-compliant"><div class="stat-label">Compliant</div><div class="stat-value" style="color:var(--green)">${c}</div><div class="stat-sub">${pct(c,total)}</div></div>
+        <div class="stat-card stat-partial"><div class="stat-label">Partial</div><div class="stat-value" style="color:var(--amber)">${p}</div><div class="stat-sub">${pct(p,total)}</div></div>
+        <div class="stat-card stat-noncompliant"><div class="stat-label">Non-Compliant</div><div class="stat-value" style="color:var(--red)">${n}</div><div class="stat-sub">${pct(n,total)}</div></div>
+      </div>
+      <div class="chart-wrap" style="height:260px;max-width:340px;margin:0 auto">
+        <canvas id="reportPieChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="report-section-title">Domain-Level Summary</h3>
+      <div class="table-scroll">
+        <table class="mapping-table">
+          <thead><tr>
+            <th>Domain</th><th style="text-align:center">Total</th>
+            <th style="text-align:center">✅ Compliant</th>
+            <th style="text-align:center">⚠️ Partial</th>
+            <th style="text-align:center">❌ Non-Compliant</th>
+            <th>Compliance %</th>
+          </tr></thead>
+          <tbody>${domSummaryRows}</tbody>
+        </table>
+      </div>
+    </div>
+
+    ${state.scope ? `<div class="card"><h3 class="report-section-title">Audit Scope</h3><p style="font-size:13px;color:var(--muted);line-height:1.7">${state.scope}</p></div>` : ''}
+
+    <div class="card">
+      <h3 class="report-section-title">Detailed Control Assessment</h3>
+      <div class="table-scroll" style="max-height:600px;overflow-y:auto">
+        <table class="report-controls-table">
+          <thead><tr>
+            <th>Control ID</th><th>Control Name</th><th>Description</th>
+            <th>Status</th><th>Remark</th><th>Evidence</th>
+          </tr></thead>
+          <tbody>${controlRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+
+  // Render pie chart in report
+  setTimeout(() => {
+    const ctx = document.getElementById('reportPieChart');
+    if (ctx) {
+      destroyChart('reportPieChart');
+      chartInstances.reportPieChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Compliant','Partially Compliant','Non-Compliant','N/A','Pending'],
+          datasets: [{ data: [c,p,n,na,total-c-p-n-na],
+            backgroundColor: ['#16a34a','#d97706','#dc2626','#94a3b8','#e2e8f0'],
+            borderWidth: 2, borderColor: '#fff' }]
+        },
+        options: { responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'right', labels: { font:{size:11}, padding:12 } } } }
+      });
+    }
+  }, 100);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PDF DOWNLOAD
+// ═══════════════════════════════════════════════════════════════
+function downloadPDFReport() {
+  showToast('📄 Generating PDF report...');
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const controls = state.auditType === 'iso' ? ISO_CONTROLS : SOC2_CONTROLS;
+  const fw = state.auditType === 'iso' ? 'ISO/IEC 27001:2022' : 'SOC 2 Type II';
+  const total = controls.length;
+  let c=0,p=0,n=0;
+  controls.forEach(ctrl => {
+    const s = state.assessments[ctrl.id]?.status;
+    if (s==='compliant') c++;
+    else if (s==='partial') p++;
+    else if (s==='noncompliant') n++;
+  });
+  const score = Math.round(((c+p*0.5)/total)*100);
+
+  // Cover page
+  doc.setFillColor(10, 15, 30);
+  doc.rect(0, 0, 210, 297, 'F');
+  doc.setTextColor(212, 168, 83);
+  doc.setFontSize(28); doc.setFont('helvetica','bold');
+  doc.text('COMPLIANCE AUDIT REPORT', 105, 80, { align: 'center' });
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(16); doc.text(fw, 105, 95, { align: 'center' });
+  doc.setFontSize(12); doc.setFont('helvetica','normal');
+  doc.text(state.clientName, 105, 115, { align: 'center' });
+  doc.setTextColor(150,160,180);
+  doc.setFontSize(10);
+  doc.text(`Auditor: ${state.auditorName}${state.auditorOrg?' — '+state.auditorOrg:''}`, 105, 130, { align:'center' });
+  doc.text(`Date: ${new Date().toLocaleDateString()}`, 105, 140, { align:'center' });
+  doc.setTextColor(212,168,83); doc.setFontSize(40); doc.setFont('helvetica','bold');
+  doc.text(score+'%', 105, 180, { align: 'center' });
+  doc.setTextColor(150,160,180); doc.setFontSize(12); doc.setFont('helvetica','normal');
+  doc.text('Overall Compliance Score', 105, 192, { align:'center' });
+
+  // Summary page
+  doc.addPage();
+  doc.setFillColor(248,250,252); doc.rect(0,0,210,297,'F');
+  doc.setTextColor(10,15,30); doc.setFontSize(18); doc.setFont('helvetica','bold');
+  doc.text('Executive Summary', 20, 30);
+  doc.setFontSize(11); doc.setFont('helvetica','normal'); doc.setTextColor(100,116,139);
+  const summaryData = [
+    ['Framework', fw], ['Organization', state.clientName],
+    ['Industry', state.industry||'Not specified'], ['Auditor', state.auditorName],
+    ['Audit Period', state.startDate+(state.endDate?' to '+state.endDate:'')],
+    ['Total Controls', String(total)], ['Compliant', `${c} (${pct(c,total)})`],
+    ['Partially Compliant', `${p} (${pct(p,total)})`],
+    ['Non-Compliant', `${n} (${pct(n,total)})`],
+    ['Overall Score', score+'%']
+  ];
+  let y = 45;
+  summaryData.forEach(([k,v]) => {
+    doc.setFont('helvetica','bold'); doc.setTextColor(10,15,30);
+    doc.text(k+':', 20, y);
+    doc.setFont('helvetica','normal'); doc.setTextColor(100,116,139);
+    doc.text(String(v), 80, y);
+    y += 10;
+  });
+
+  // Controls pages
+  doc.addPage();
+  doc.setFillColor(248,250,252); doc.rect(0,0,210,297,'F');
+  doc.setTextColor(10,15,30); doc.setFontSize(16); doc.setFont('helvetica','bold');
+  doc.text('Detailed Control Assessment', 20, 25);
+  y = 40;
+
+  controls.forEach((ctrl) => {
+    if (y > 260) { doc.addPage(); doc.setFillColor(248,250,252); doc.rect(0,0,210,297,'F'); y = 20; }
+    const a = state.assessments[ctrl.id] || {};
+    const statusColors = { compliant:[22,163,74], partial:[217,119,6], noncompliant:[220,38,38], na:[100,116,139], '': [203,213,225] };
+    const statusLabels = { compliant:'Compliant', partial:'Partial', noncompliant:'Non-Compliant', na:'N/A', ''  :'Pending' };
+    const [r,g,b] = statusColors[a.status||''];
+    doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(10,15,30);
+    doc.text(ctrl.id, 20, y);
+    doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(30,40,80);
+    const nameLines = doc.splitTextToSize(ctrl.name, 110);
+    doc.text(nameLines, 40, y);
+    doc.setFillColor(r,g,b);
+    doc.roundedRect(155, y-4, 36, 7, 2, 2, 'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','bold');
+    doc.text(statusLabels[a.status||''], 173, y, { align:'center' });
+    if (a.remark) {
+      doc.setFontSize(8); doc.setFont('helvetica','italic'); doc.setTextColor(100,116,139);
+      const remarkLines = doc.splitTextToSize('Note: '+a.remark, 170);
+      doc.text(remarkLines, 40, y+5);
+      y += 5 * remarkLines.length;
+    }
+    y += 10;
+    doc.setDrawColor(226,232,240); doc.line(20, y-2, 190, y-2);
+  });
+
+  doc.save(`AuditReport_${state.clientName.replace(/\s+/g,'_')}_${state.auditType.toUpperCase()}.pdf`);
+  showToast('✅ PDF downloaded successfully!');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════════════════════
+function pct(v, t) { return t > 0 ? Math.round((v/t)*100)+'%' : '0%'; }
+
+function destroyChart(id) {
+  if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ESC key closes manager (only if a client is active)
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && state.clientId) {
+    document.getElementById('client-manager-overlay').style.display = 'none';
+    document.getElementById('delete-confirm-overlay').style.display = 'none';
+  }
+});
+
+// Click outside delete confirm to cancel
+document.getElementById('delete-confirm-overlay').addEventListener('click', function(e) {
+  if (e.target === this) this.style.display = 'none';
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  INITIALISE — restore last active client or open manager
+// ═══════════════════════════════════════════════════════════════
+(function init() {
+  const clients = getAllClients();
+  document.getElementById('client-count-badge').textContent = clients.length;
+
+  const lastActiveId = lsGet(LS_ACTIVE);
+  if (lastActiveId && clients.find(c => c.id === lastActiveId)) {
+    // Silently restore last session
+    loadClient(lastActiveId);
+  } else if (clients.length > 0) {
+    // Have clients but no active — open manager
+    openClientManager();
+  } else {
+    // First ever use — show manager with empty state
+    document.getElementById('startDate').valueAsDate = new Date();
+    openClientManager();
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════
+//  AI ENGINE — Works OFFLINE + ONLINE
+//  No API key · No CORS issues · No fetch failures
+//  Built-in GRC knowledge base covers all demo scenarios
+//  Online enhancement via CORS proxy when internet available
+// ═══════════════════════════════════════════════════════════
+
+let chatOpen = false;
+let chatHist = [];
+let onlineMode = false;
+
+// ── Check internet on load ────────────────────────────────
+(async function checkOnline() {
+  try {
+    const r = await fetch('https://api.allorigins.win/raw?url=' +
+      encodeURIComponent('https://text.pollinations.ai/ping'), {signal: AbortSignal.timeout(4000)});
+    onlineMode = r.ok;
+  } catch(e) { onlineMode = false; }
+  const lbl = document.getElementById('ai-mode-label');
+  if (lbl) lbl.textContent = onlineMode ? '🟢 Online Mode' : '🔵 Offline Mode';
+})();
+
+// ── CORS-free online AI via allorigins proxy ──────────────
+async function tryOnlineAI(prompt) {
+  const url = 'https://text.pollinations.ai/' + encodeURIComponent(prompt);
+  const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+  const r = await fetch(proxy, {signal: AbortSignal.timeout(8000)});
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const t = await r.text();
+  if (!t || t.length < 10) throw new Error('Empty');
+  return t.trim();
+}
+
+// ════════════════════════════════════════════════════════════
+//  BUILT-IN GRC KNOWLEDGE BASE
+//  Covers every real question an examiner / audience will ask
+// ════════════════════════════════════════════════════════════
+const KB = {
+
+  // ── ISO 27001 domains ────────────────────────────────────
+  'iso domains': `ISO/IEC 27001:2022 has 93 controls across 4 main themes in Annex A:
+
+• A.5 — Organizational Controls (37 controls): Policies, roles, access control, suppliers, incident management, legal compliance.
+• A.6 — People Controls (8 controls): Background checks, training, NDAs, remote work, event reporting.
+• A.7 — Physical Controls (14 controls): Building security, equipment protection, media handling, secure disposal.
+• A.8 — Technological Controls (34 controls): Endpoint security, malware protection, vulnerability management, encryption, network security, secure development, change management.
+
+Total: 93 controls covering the full information security lifecycle.`,
+
+  // ── SOC 2 domains ────────────────────────────────────────
+  'soc 2 domains': `SOC 2 Trust Services Criteria has 64 controls across these categories:
+
+• CC1 — Control Environment (5): Governance, accountability, board oversight.
+• CC2 — Communication & Information (3): Quality information, internal & external communication.
+• CC3 — Risk Assessment (4): Objective specification, risk identification, fraud risk, change management.
+• CC4 — Monitoring Activities (2): Ongoing evaluations, deficiency communication.
+• CC5 — Control Activities (3): Control selection, technology controls, policy deployment.
+• CC6 — Logical & Physical Access (8): Access security, user registration, RBAC, physical access.
+• CC7 — System Operations (5): Vulnerability management, monitoring, incident response, recovery.
+• CC8 — Change Management (1): Change authorization and testing.
+• CC9 — Risk Mitigation (2): Business disruption, vendor risk.
+• A — Availability (3): Capacity management, recovery planning.
+• PI — Processing Integrity (5): Complete and accurate processing.
+• C — Confidentiality (2): Identifying and disposing of confidential data.
+• P — Privacy (11): Notice, consent, collection, use, retention, disposal, access, disclosure.`,
+
+  // ── Specific control explanations ────────────────────────
+  'a.5.1': `ISO 27001 Control A.5.1 — Policies for Information Security
+
+What it requires: The organization must create, approve, publish, and communicate an Information Security Policy. The policy must be reviewed regularly and when significant changes occur.
+
+Evidence to collect:
+• Signed Information Security Policy document (approved by senior management)
+• Meeting minutes showing policy approval
+• Evidence of policy communication to all staff (email, intranet post)
+• Policy review history / version control log
+• Acknowledgement records from employees
+
+Assessment guidance:
+• Compliant: Policy exists, is approved, communicated, and reviewed regularly.
+• Partially Compliant: Policy exists but is outdated, not formally approved, or not communicated.
+• Non-Compliant: No policy exists at all.`,
+
+  'a.5.2': `ISO 27001 Control A.5.2 — Information Security Roles and Responsibilities
+
+What it requires: Clear definition and assignment of information security roles and responsibilities across the organization.
+
+Evidence to collect:
+• RACI matrix or responsibility assignment document
+• Job descriptions mentioning security responsibilities
+• Organizational chart showing security roles
+• Delegation of authority documents
+
+Assessment guidance:
+• Compliant: Roles clearly defined, documented, and assigned to named individuals.
+• Partially Compliant: Some roles defined but gaps exist or not formally documented.
+• Non-Compliant: No defined security roles.`,
+
+  'a.5.15': `ISO 27001 Control A.5.15 — Access Control
+
+What it requires: Rules and procedures for controlling logical and physical access to information assets, based on business and security requirements.
+
+Evidence to collect:
+• Access Control Policy document
+• User access request forms
+• Access approval records
+• Active Directory / IAM system configuration screenshots
+• Access review logs
+
+Assessment guidance:
+• Compliant: Formal access control policy exists with documented procedures.
+• Partially Compliant: Access control practiced informally but not documented.
+• Non-Compliant: No access control policy or procedures.`,
+
+  'a.8.8': `ISO 27001 Control A.8.8 — Management of Technical Vulnerabilities
+
+What it requires: Timely identification and remediation of technical vulnerabilities in systems.
+
+Evidence to collect:
+• Vulnerability scanning reports (Nessus, Qualys, OpenVAS)
+• Patch management policy and records
+• Patch deployment evidence (WSUS/SCCM logs)
+• SLAs for vulnerability remediation by severity
+
+Assessment guidance:
+• Compliant: Regular scans conducted, patches applied within defined SLAs.
+• Partially Compliant: Scanning done but patching is delayed or inconsistent.
+• Non-Compliant: No vulnerability scanning or patch management process.`,
+
+  'cc6.1': `SOC 2 Control CC6.1 — Logical Access Security
+
+What it requires: The entity implements logical access security software, infrastructure, and architectures to protect information assets.
+
+Maps to ISO 27001: A.5.15 (Access Control), A.5.16 (Identity Management), A.5.17 (Authentication Information), A.8.3 (Information Access Restriction).
+
+Evidence to collect:
+• Access control architecture documentation
+• Firewall and network segmentation configs
+• IAM/Active Directory setup screenshots
+• MFA implementation evidence
+• Privileged access management (PAM) records
+
+Assessment guidance:
+• Compliant: Documented access security architecture with MFA and least privilege enforced.
+• Partially Compliant: Some controls in place but MFA or documentation missing.
+• Non-Compliant: No formal access security controls.`,
+
+  'cc6.3': `SOC 2 Control CC6.3 — Role-Based Access Control
+
+What it requires: The entity authorizes access based on roles and responsibilities, applying least privilege and segregation of duties.
+
+Evidence to collect:
+• Role definitions and access matrix document
+• Screenshots of role assignments in systems
+• Evidence of access reviews (quarterly/semi-annual)
+• Segregation of duties matrix
+• Access provisioning and de-provisioning records
+
+Assessment guidance:
+• Compliant: RBAC implemented with documented roles, regular access reviews.
+• Partially Compliant: Roles defined but not reviewed regularly, or exceptions undocumented.
+• Non-Compliant: No role-based access control in place.`,
+
+  'cc7.4': `SOC 2 Control CC7.4 — Incident Response
+
+What it requires: The entity responds to identified security incidents by executing a defined incident response program.
+
+Evidence to collect:
+• Incident Response Plan / Playbook document
+• Incident tickets / SIEM alert logs
+• Post-incident review reports
+• Communication records during incidents
+• Evidence of tabletop exercises or drills
+
+Assessment guidance:
+• Compliant: Formal IR plan exists, tested, and evidence of past incident handling.
+• Partially Compliant: IR plan exists but not tested or incomplete.
+• Non-Compliant: No incident response plan.`,
+
+  // ── What is GRC ──────────────────────────────────────────
+  'what is grc': `GRC stands for Governance, Risk, and Compliance — three pillars of organizational management:
+
+• Governance: The framework of rules, practices, and processes by which an organization is directed and controlled. Includes policies, roles, responsibilities, and decision-making structures.
+
+• Risk: Identifying, assessing, and mitigating risks that could affect business objectives. Includes cybersecurity risks, operational risks, legal risks, and financial risks.
+
+• Compliance: Adhering to laws, regulations, standards, and internal policies. For cybersecurity, this includes ISO 27001, SOC 2, GDPR, HIPAA, PCI-DSS, and others.
+
+AuditIQ is a GRC platform that helps auditors assess compliance against ISO 27001 and SOC 2 frameworks.`,
+
+  // ── Compliant vs partial ─────────────────────────────────
+  'compliant vs partial': `The three compliance status levels in GRC auditing:
+
+✅ COMPLIANT
+The organization fully meets the control requirement. All required documentation exists, processes are implemented and followed, and evidence clearly demonstrates the control is effective.
+
+⚠️ PARTIALLY COMPLIANT
+The organization has made some effort toward the control but key gaps remain. Examples: policy exists but is not reviewed regularly; access control is practiced but not documented; backups done but never tested.
+
+❌ NON-COMPLIANT
+The control is not implemented at all, or evidence of compliance is completely absent. This typically represents a significant risk requiring immediate remediation.
+
+Scoring in AuditIQ: Compliant = 100%, Partially Compliant = 50%, Non-Compliant = 0%.`,
+
+  // ── What is ISO 27001 ────────────────────────────────────
+  'what is iso 27001': `ISO/IEC 27001:2022 is the international standard for Information Security Management Systems (ISMS).
+
+Key facts:
+• Published by the International Organization for Standardization (ISO)
+• Defines requirements for establishing, implementing, maintaining, and improving an ISMS
+• Contains 93 controls across 4 themes (Organizational, People, Physical, Technological)
+• Certification is awarded by accredited third-party auditors
+• Used worldwide — recognized by governments, enterprises, and regulators including IRDAI in India
+
+Why organizations get certified:
+• Demonstrates commitment to data security to customers
+• Required by many enterprise contracts and government tenders
+• Reduces risk of data breaches and cyber incidents
+• Provides a structured framework for managing security`,
+
+  // ── What is SOC 2 ────────────────────────────────────────
+  'what is soc 2': `SOC 2 (System and Organization Controls 2) is a compliance framework developed by the American Institute of Certified Public Accountants (AICPA).
+
+Key facts:
+• Based on Trust Services Criteria (TSC) covering 5 categories: Security, Availability, Processing Integrity, Confidentiality, Privacy
+• SOC 2 Type I: Point-in-time assessment of controls design
+• SOC 2 Type II: Assessment of controls over a period (typically 6-12 months)
+• 64 criteria total when all 5 categories are included
+• Widely required for SaaS companies, cloud service providers, and US-market technology businesses
+
+Key difference from ISO 27001:
+• ISO 27001 is an international certification standard
+• SOC 2 is a US-origin attestation report — not a certification but an audit report
+• Both are widely accepted; many companies pursue both`,
+
+  // ── Evidence guidance ────────────────────────────────────
+  'what is evidence': `Evidence in GRC auditing is documentation or artifacts that prove a control is implemented and effective. Types of evidence:
+
+• Policy Documents: Written policies, procedures, SOPs that define what the organization does
+• Technical Screenshots: System configurations, access control settings, security tool outputs
+• Logs and Reports: Audit logs, vulnerability scan reports, patch management reports, SIEM outputs
+• Records: Access request forms, training completion records, incident tickets, review meeting minutes
+• Certificates: Security tool licenses, staff certifications, vendor compliance certificates
+• Contracts: NDAs, supplier agreements with security clauses
+
+Best practice for evidence: Each piece of evidence should clearly show the date, system/context, and directly relate to the specific control requirement being satisfied.`,
+
+  // ── Access control evidence ──────────────────────────────
+  'access control evidence': `Evidence for Access Control controls (ISO A.5.15, A.5.16, A.5.18 / SOC 2 CC6.1, CC6.3):
+
+• Access Control Policy document (approved and dated)
+• User access request and approval forms
+• Active Directory / IAM system screenshots showing user roles
+• MFA (Multi-Factor Authentication) configuration evidence
+• Quarterly or semi-annual access review reports
+• Evidence of access removal when employees leave (off-boarding records)
+• Privileged access management (PAM) logs
+• Role definitions and segregation of duties matrix`,
+
+  // ── Mapping ──────────────────────────────────────────────
+  'soc 2 iso mapping': `SOC 2 and ISO 27001 overlap significantly. Key mappings:
+
+• SOC 2 CC6.1 (Logical Access) → ISO A.5.15, A.5.16, A.5.17, A.8.3
+• SOC 2 CC6.3 (RBAC) → ISO A.5.3, A.5.15, A.5.18, A.8.2
+• SOC 2 CC7.1 (Vulnerability Management) → ISO A.8.8, A.8.16
+• SOC 2 CC7.4 (Incident Response) → ISO A.5.26, A.5.27
+• SOC 2 CC9.2 (Vendor Risk) → ISO A.5.19, A.5.20, A.5.21, A.5.22
+• SOC 2 P1.1 (Privacy Notice) → ISO A.5.34
+• SOC 2 A1.2 (Recovery Plan) → ISO A.5.30, A.8.13
+
+If an organization already has ISO 27001, they have a head start on SOC 2 compliance — especially in the CC6 and CC7 areas.`,
+
+  // ── Audit process ────────────────────────────────────────
+  'audit process': `A GRC compliance audit typically follows these phases:
+
+1. Planning: Define scope, identify controls, prepare evidence checklists, notify stakeholders.
+2. Evidence Collection: Gather policies, screenshots, logs, reports, and records for each control.
+3. Assessment: Evaluate each control as Compliant, Partially Compliant, or Non-Compliant based on evidence quality.
+4. Gap Analysis: Identify which controls are not met and what remediation is needed.
+5. Reporting: Produce the audit report with findings, risk ratings, and recommendations.
+6. Remediation Tracking: Monitor the organization's progress on fixing identified gaps.
+7. Closure/Re-audit: Verify that gaps have been addressed and issue a closure report.
+
+AuditIQ automates steps 3–5 with real-time scoring, gap analysis charts, and PDF report generation.`,
+
+};
+
+// ── Smart offline responder ───────────────────────────────
+function offlineAnswer(question) {
+  const q = question.toLowerCase();
+
+  // Direct KB lookups
+  const lookups = [
+    ['iso 27001 domain', 'iso domains'],
+    ['main domain', 'iso domains'],
+    ['domains of iso', 'iso domains'],
+    ['annex a', 'iso domains'],
+    ['soc 2 domain', 'soc 2 domains'],
+    ['soc2 domain', 'soc 2 domains'],
+    ['trust service', 'soc 2 domains'],
+    ['a.5.1', 'a.5.1'],
+    ['a5.1', 'a.5.1'],
+    ['5.1', 'a.5.1'],
+    ['information security polic', 'a.5.1'],
+    ['a.5.2', 'a.5.2'],
+    ['roles and responsib', 'a.5.2'],
+    ['a.5.15', 'a.5.15'],
+    ['access control', 'a.5.15'],
+    ['a.8.8', 'a.8.8'],
+    ['vulnerabilit', 'a.8.8'],
+    ['cc6.1', 'cc6.1'],
+    ['cc6.3', 'cc6.3'],
+    ['role.based', 'cc6.3'],
+    ['rbac', 'cc6.3'],
+    ['cc7.4', 'cc7.4'],
+    ['incident response', 'cc7.4'],
+    ['what is grc', 'what is grc'],
+    ['explain grc', 'what is grc'],
+    ['what does grc', 'what is grc'],
+    ['grc stand', 'what is grc'],
+    ['compliant vs partial', 'compliant vs partial'],
+    ['difference between compliant', 'compliant vs partial'],
+    ['partially compliant', 'compliant vs partial'],
+    ['what is iso 27001', 'what is iso 27001'],
+    ['about iso 27001', 'what is iso 27001'],
+    ['explain iso', 'what is iso 27001'],
+    ['what is soc 2', 'what is soc 2'],
+    ['about soc 2', 'what is soc 2'],
+    ['explain soc', 'what is soc 2'],
+    ['what is evidence', 'what is evidence'],
+    ['types of evidence', 'what is evidence'],
+    ['evidence mean', 'what is evidence'],
+    ['evidence for access', 'access control evidence'],
+    ['access control evidence', 'access control evidence'],
+    ['soc 2 iso map', 'soc 2 iso mapping'],
+    ['mapping', 'soc 2 iso mapping'],
+    ['audit process', 'audit process'],
+    ['audit phases', 'audit process'],
+    ['how audit work', 'audit process'],
+  ];
+
+  for (const [pattern, key] of lookups) {
+    if (q.includes(pattern)) return KB[key];
+  }
+
+  // Context-aware fallback for loaded controls
+  if (state.auditType) {
+    const fw = state.auditType === 'iso' ? 'ISO 27001' : 'SOC 2';
+    const controls = state.auditType === 'iso' ? ISO_CONTROLS : SOC2_CONTROLS;
+    // Try to match a control ID in the question
+    const match = q.match(/\b([a-z]\.\d+\.\d+|cc\d+\.\d+|[ap]\d+\.\d+|pi\d+\.\d+)\b/i);
+    if (match) {
+      const id = match[1].toUpperCase();
+      const ctrl = controls.find(c => c.id.toUpperCase() === id);
+      if (ctrl) {
+        return `Control ${ctrl.id} — ${ctrl.name}\n\n${ctrl.desc}\n\nFor this control you would typically need to collect:\n• Policy or procedure document covering the requirement\n• Evidence showing the control is implemented (screenshots, logs, records)\n• Review or approval records showing management oversight\n• Training or awareness records if people-related`;
+      }
+    }
+  }
+
+  // Generic GRC answer
+  return `Based on GRC best practices:\n\n${question.includes('evidence') ?
+    'Evidence should be recent, specific, and directly demonstrate that the control requirement is satisfied. Collect policy documents, system screenshots, logs, and approval records.' :
+    question.includes('compliant') || question.includes('status') ?
+    'Set the status based on how completely the control requirement is met:\n• Compliant — fully implemented with clear evidence\n• Partially Compliant — partly implemented but gaps remain\n• Non-Compliant — not implemented or no evidence exists' :
+    'This is a common GRC compliance question. For detailed guidance on specific controls, try asking about a specific control ID (like A.5.1 or CC6.1) or topic like "access control evidence" or "what is ISO 27001".'
+  }`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CHATBOT
+// ═══════════════════════════════════════════════════════════
+function toggleChat() {
+  chatOpen = !chatOpen;
+  document.getElementById('ai-panel').style.display = chatOpen ? 'flex' : 'none';
+  if (chatOpen) setTimeout(() => document.getElementById('ai-inp').focus(), 40);
+}
+
+function qSend(t) { document.getElementById('ai-inp').value = t; sendChat(); }
+
+async function sendChat() {
+  const inp = document.getElementById('ai-inp');
+  const txt = (inp.value || '').trim();
+  if (!txt) return;
+  inp.value = ''; inp.style.height = 'auto';
+
+  addMsg('u', txt);
+  const tid = addTyping();
+
+  try {
+    let reply;
+    if (onlineMode) {
+      // Build a good prompt for Pollinations GET endpoint (no CORS issues)
+      const ctx = state.clientName
+        ? 'Context: Auditing ' + state.clientName + ' against ' + (state.auditType === 'iso' ? 'ISO 27001' : 'SOC 2') + '. '
+        : '';
+      const prompt = 'You are a GRC compliance expert. ' + ctx +
+        'Answer concisely (under 120 words). Use bullet points for lists. Question: ' + txt;
+      try {
+        reply = await tryOnlineAI(prompt);
+      } catch(e) {
+        onlineMode = false;
+        const lbl = document.getElementById('ai-mode-label');
+        if (lbl) lbl.textContent = '🔵 Offline Mode';
+        reply = offlineAnswer(txt);
+      }
+    } else {
+      // Simulate small delay for natural feel
+      await new Promise(r => setTimeout(r, 600 + Math.random() * 500));
+      reply = offlineAnswer(txt);
+    }
+
+    removeTyping(tid);
+    addMsg('ai', reply);
+    chatHist.push({ u: txt, a: reply });
+    if (chatHist.length > 10) chatHist.shift();
+  } catch(e) {
+    removeTyping(tid);
+    const reply = offlineAnswer(txt);
+    addMsg('ai', reply);
+  }
+}
+
+async function tryOnlineAI(prompt) {
+  // Use allorigins CORS proxy to avoid CORS issues
+  const targetUrl = 'https://text.pollinations.ai/' + encodeURIComponent(prompt);
+  const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
+  const r = await fetch(proxyUrl, { signal: AbortSignal.timeout(7000) });
+  if (!r.ok) throw new Error('proxy error');
+  const t = await r.text();
+  if (!t || t.trim().length < 5) throw new Error('empty');
+  return t.trim();
+}
+
+function addMsg(role, text) {
+  const box = document.getElementById('ai-msgs');
+  const d = document.createElement('div');
+  d.className = 'aimsg ' + role;
+  const fmt = String(text)
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^[•\-] (.+)$/gm, '<div style="padding-left:6px;margin:2px 0">• $1</div>')
+    .replace(/\n/g, '<br>');
+  d.innerHTML = '<div class="aiav">' + (role==='ai'?'🧠':'👤') + '</div>' +
+    '<div class="aibub">' + fmt + '</div>';
+  box.appendChild(d); box.scrollTop = box.scrollHeight;
+}
+
+function addTyping() {
+  const box = document.getElementById('ai-msgs');
+  const id = 't' + Date.now();
+  const d = document.createElement('div');
+  d.className = 'aimsg ai'; d.id = id;
+  d.innerHTML = '<div class="aiav">🧠</div><div class="aibub"><div class="ai-typ"><span></span><span></span><span></span></div></div>';
+  box.appendChild(d); box.scrollTop = box.scrollHeight;
+  return id;
+}
+function removeTyping(id) { const e = document.getElementById(id); if(e) e.remove(); }
+
+// ═══════════════════════════════════════════════════════════
+//  SMART REMARK SUGGESTIONS (offline)
+// ═══════════════════════════════════════════════════════════
+function aiSuggest(cid) {
+  const controls = state.auditType === 'iso' ? ISO_CONTROLS : SOC2_CONTROLS;
+  const ctrl = controls.find(c => c.id === cid);
+  if (!ctrl) return;
+  const status = state.assessments[cid]?.status || 'noncompliant';
+
+  const btn = document.getElementById('asb-' + cid);
+  const box = document.getElementById('abox-' + cid);
+  if (!btn) return;
+  btn.disabled = true; btn.innerHTML = '<span class="sp"></span> Generating...';
+
+  // Generate remark based on status and control
+  setTimeout(() => {
+    const statusPhrases = {
+      compliant: [
+        `The organization has fully implemented ${ctrl.name.toLowerCase()} in accordance with ${state.auditType === 'iso' ? 'ISO/IEC 27001:2022 Annex A' : 'SOC 2 Trust Services Criteria'}. Evidence reviewed confirms that the control is documented, operational, and regularly reviewed by management.`,
+        `Evidence reviewed during the assessment confirms that ${ctrl.name.toLowerCase()} is effectively implemented. The organization maintains appropriate documentation and demonstrates consistent adherence to the defined requirements.`,
+      ],
+      partial: [
+        `The organization has partially implemented ${ctrl.name.toLowerCase()}. While foundational elements are in place, gaps were identified in documentation completeness or operational consistency. Remediation is recommended to achieve full compliance.`,
+        `Assessment of ${ctrl.name.toLowerCase()} indicates partial compliance. The control exists in practice but lacks formal documentation or evidence of regular review. The organization should address identified gaps to meet the full requirement.`,
+      ],
+      noncompliant: [
+        `The organization has not implemented ${ctrl.name.toLowerCase()} as required. No evidence was found to demonstrate that this control is in place. This represents a material gap that should be prioritized for immediate remediation.`,
+        `Assessment findings indicate that ${ctrl.name.toLowerCase()} is not currently implemented. The absence of this control presents a risk to the organization's ${state.auditType === 'iso' ? 'information security posture' : 'compliance posture'}. Immediate remediation action is recommended.`,
+      ],
+      na: [
+        `${ctrl.name} has been assessed as Not Applicable to the current scope of operations. This determination has been reviewed and approved by the engagement team based on the organization's operational context.`,
+      ],
+    };
+
+    const phrases = statusPhrases[status] || statusPhrases.partial;
+    const remark = phrases[Math.floor(Math.random() * phrases.length)];
+
+    btn.disabled = false; btn.innerHTML = '✨ AI Suggest';
+    if (box) {
+      box.style.display = 'block';
+      box.querySelector('.atxt').textContent = remark;
+      box.querySelector('.ai-use').onclick = () => {
+        const inp = document.getElementById('rem-' + cid);
+        if (inp) { inp.value = remark; setRemark(cid, remark); }
+        box.style.display = 'none';
+        showToast('✅ Remark applied to ' + cid);
+      };
+    }
+  }, 700 + Math.random() * 500);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  EVIDENCE SCANNER (offline smart matching)
+// ═══════════════════════════════════════════════════════════
+async function aiScan(cid) {
+  const controls = state.auditType === 'iso' ? ISO_CONTROLS : SOC2_CONTROLS;
+  const ctrl = controls.find(c => c.id === cid);
+  const ass = state.assessments[cid] || {};
+  if (!ctrl || !ass.fileName) { showToast('⚠️ Upload evidence first'); return; }
+
+  const btn = document.getElementById('esb-' + cid);
+  const res = document.getElementById('eres-' + cid);
+  if (!btn) return;
+  btn.disabled = true; btn.innerHTML = '<span class="sp"></span> Scanning...';
+
+  // Read file text if possible
+  let ftext = '';
+  const fi = document.getElementById('ev-' + cid);
+  if (fi && fi.files && fi.files[0]) {
+    const file = fi.files[0];
+    if (!file.type.startsWith('image/') && !file.name.match(/\.(pdf|xlsx|xls)$/i)) {
+      try {
+        ftext = await new Promise((ok, fail) => {
+          const r = new FileReader();
+          r.onload = e => ok((e.target.result || '').slice(0, 2500));
+          r.onerror = () => fail(new Error('read error'));
+          r.readAsText(file);
+        });
+      } catch(e) { ftext = ''; }
+    }
+  }
+
+  setTimeout(() => {
+    btn.disabled = false; btn.innerHTML = '🔍 Rescan';
+
+    // Smart keyword analysis
+    const fileName = ass.fileName.toLowerCase();
+    const content = (ftext + ' ' + fileName).toLowerCase();
+    const ctrlWords = (ctrl.name + ' ' + ctrl.desc).toLowerCase()
+      .replace(/[^a-z\s]/g, ' ').split(/\s+/)
+      .filter(w => w.length > 4 && !['shall','must','should','organization','information','security','systems','their','which','that','this','with','from','have','been','will','into','when','where','what','such'].includes(w));
+
+    const matched = ctrlWords.filter(w => content.includes(w));
+    const score = ctrlWords.length > 0 ? matched.length / Math.min(ctrlWords.length, 12) : 0;
+
+    let verdict, conf, reason;
+    if (score >= 0.55) {
+      verdict = 'relevant'; conf = Math.round(65 + score * 30);
+      reason = 'File content and name align well with control requirements.';
+    } else if (score >= 0.2) {
+      verdict = 'partial'; conf = Math.round(40 + score * 40);
+      reason = 'Partial keyword match — file may partially satisfy the control.';
+    } else {
+      verdict = 'not_relevant'; conf = Math.round(55 + (0.2 - score) * 100);
+      reason = 'File does not appear to relate to this control requirement.';
+    }
+
+    const labels = { relevant: '✅ Relevant', partial: '⚠️ Partially Relevant', not_relevant: '❌ Not Relevant' };
+    const classes = { relevant: 'ev-ok', partial: 'ev-pt', not_relevant: 'ev-no' };
+
+    if (res) {
+      res.style.display = 'flex';
+      res.className = 'ev-res ' + classes[verdict];
+      res.innerHTML = labels[verdict] +
+        ' <span style="font-weight:400;font-size:10.5px;opacity:.85">(' + conf + '% confidence) — ' + reason + '</span>';
+    }
+    saveCurrentClient();
+  }, 800 + Math.random() * 600);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  AI REPORT NARRATIVE (offline)
+// ═══════════════════════════════════════════════════════════
+function aiNarrative() {
+  if (!state.clientName || !state.auditType) { showToast('⚠️ Load a client first'); return; }
+  const controls = state.auditType === 'iso' ? ISO_CONTROLS : SOC2_CONTROLS;
+  const total = controls.length;
+  let c=0,p=0,n=0,pend=0;
+  const ncList=[], ptList=[];
+  controls.forEach(ctrl => {
+    const s = state.assessments[ctrl.id]?.status;
+    if (s === 'compliant') c++;
+    else if (s === 'partial') { p++; if(ptList.length<3) ptList.push(ctrl.name); }
+    else if (s === 'noncompliant') { n++; if(ncList.length<3) ncList.push(ctrl.name); }
+    else pend++;
+  });
+  const score = Math.round(((c + p*0.5)/total)*100);
+  const fw = state.auditType === 'iso' ? 'ISO/IEC 27001:2022' : 'SOC 2 Type II';
+
+  const btn = document.getElementById('ai-narr-btn');
+  const box = document.getElementById('ai-narr-box');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="sp"></span> Generating...'; }
+
+  setTimeout(() => {
+    const scoreDesc = score >= 75 ? 'strong' : score >= 50 ? 'moderate' : score >= 25 ? 'developing' : 'early-stage';
+    const risk = n > total * 0.4 ? 'significant' : n > total * 0.2 ? 'moderate' : 'limited';
+
+    let narrative = `The compliance assessment of ${state.clientName} against ${fw} indicates a ${scoreDesc} overall compliance posture with an aggregate score of ${score}%, based on the assessment of ${total} controls across all applicable domains. `;
+
+    if (c > 0) {
+      narrative += `The organization demonstrates effective implementation across ${c} controls, reflecting ${score >= 60 ? 'a commendable commitment to information security governance' : 'foundational security practices in select areas'}. `;
+    }
+
+    if (n > 0) {
+      const topGaps = ncList.length > 0 ? ncList.slice(0,2).join(' and ') : 'several control areas';
+      narrative += `Critical compliance gaps were identified across ${n} controls, most notably in ${topGaps}, representing ${risk} organizational risk that requires prioritized remediation attention. `;
+    } else if (p > 0) {
+      narrative += `While no controls were assessed as fully non-compliant, ${p} controls require further development to achieve complete compliance with the standard. `;
+    }
+
+    narrative += `It is recommended that the organization develop a structured remediation roadmap addressing identified gaps, with priority assigned to non-compliant controls based on risk impact and implementation feasibility.`;
+
+    if (btn) { btn.disabled = false; btn.innerHTML = '✨ Regenerate'; }
+    if (box) {
+      box.style.display = 'block';
+      box.querySelector('.ai-narr-txt').textContent = narrative;
+    }
+    showToast('✅ AI executive summary generated');
+  }, 900 + Math.random() * 400);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INJECT AI BUTTONS
+// ═══════════════════════════════════════════════════════════
+function injectAIButtons() {
+  const controls = state.auditType === 'iso' ? ISO_CONTROLS : SOC2_CONTROLS;
+  controls.forEach(ctrl => {
+    const row = document.getElementById('crow-' + ctrl.id);
+    if (!row) return;
+    const actions = row.querySelector('.control-actions');
+    if (!actions) return;
+
+    if (!document.getElementById('asb-' + ctrl.id)) {
+      const btn = document.createElement('button');
+      btn.className = 'ai-sb'; btn.id = 'asb-' + ctrl.id;
+      btn.innerHTML = '✨ AI Suggest';
+      btn.onclick = () => aiSuggest(ctrl.id);
+      actions.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'ai-sbox'; box.id = 'abox-' + ctrl.id;
+      box.innerHTML = '<div class="atxt" style="margin-bottom:5px"></div><button class="ai-use">✓ Use this remark</button>';
+      actions.appendChild(box);
+    }
+
+    if (!document.getElementById('esb-' + ctrl.id)) {
+      const btn = document.createElement('button');
+      btn.className = 'ev-sb'; btn.id = 'esb-' + ctrl.id;
+      btn.innerHTML = '🔍 AI Scan Evidence';
+      btn.onclick = () => aiScan(ctrl.id);
+      actions.appendChild(btn);
+
+      const res = document.createElement('div');
+      res.className = 'ev-res'; res.id = 'eres-' + ctrl.id;
+      actions.appendChild(res);
+
+      if (state.assessments[ctrl.id]?.fileName) btn.style.display = 'inline-flex';
+    }
+  });
+}
+
+function injectReportAI() {
+  const container = document.getElementById('report-container');
+  if (!container || !state.clientName || document.getElementById('ai-narr-btn')) return;
+  const wrap = document.createElement('div');
+  wrap.style.marginBottom = '16px';
+  wrap.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">' +
+      '<div style="font-size:13px;font-weight:700;color:var(--ink)">🤖 AI Executive Summary</div>' +
+      '<button id="ai-narr-btn" onclick="aiNarrative()" style="background:linear-gradient(135deg,#0284c7,#0ea5e9);color:#fff;border:none;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">✨ AI Summary</button>' +
+    '</div>' +
+    '<div id="ai-narr-box" class="ai-narr">' +
+      '<div class="ai-narr-lbl">🧠 AI-Generated Executive Narrative</div>' +
+      '<div class="ai-narr-txt"></div>' +
+    '</div>';
+  container.insertBefore(wrap, container.firstChild);
+}
+
+// ── Patches ──────────────────────────────────────────────────
+const _lc = loadControls;
+loadControls = function() { _lc(); setTimeout(injectAIButtons, 100); };
+
+const _hfu = handleFileUpload;
+handleFileUpload = function(id, input) {
+  _hfu(id, input);
+  const b = document.getElementById('esb-' + id);
+  if (b) b.style.display = 'inline-flex';
+};
+
+const _st = switchTab;
+switchTab = function(idx) {
+  _st(idx);
+  if (idx === 1 && state.auditType) setTimeout(injectAIButtons, 160);
+  if (idx === 5) setTimeout(injectReportAI, 80);
+};
+
+const _rr = renderReport;
+renderReport = function() { _rr(); setTimeout(injectReportAI, 80); };
+
+</script>
+</body>
+</html>
